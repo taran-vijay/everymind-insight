@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>EveryMind 988 Training Survey</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="page-header">
+    <p class="eyebrow">EveryMind · Training survey</p>
+    <h1>988 Training Survey</h1>
+    <p class="intro">What participants reported learning, where gaps remain, and who answered.</p>
+    <p id="draft-banner" class="draft" hidden>DRAFT - synthetic sample data</p>
+    <div class="report-controls">
+      <label for="report-picker">Open a report</label>
+      <input type="file" id="report-picker" accept=".json,application/json">
+    </div>
+    <p id="load-status" role="status" aria-live="polite">Loading the report…</p>
+    <noscript>This dashboard requires JavaScript to read the report and display its charts.</noscript>
+  </header>
+
+  <main id="dashboard" hidden>
+    <section class="panel" aria-labelledby="objectives-heading">
+      <h2 id="objectives-heading">Agreement by objective</h2>
+      <p>Recalled-before and current ratings of Agree or Strongly agree. Whiskers show 95% confidence intervals.</p>
+      <div id="objectives" class="chart-list"></div>
+      <div class="axis" aria-hidden="true"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+    </section>
+
+    <section class="panel" aria-labelledby="gap-heading">
+      <h2 id="gap-heading">Remaining gap</h2>
+      <p>Participants whose current rating was below Agree.</p>
+      <div id="remaining-gap" class="chart-list"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="movement-heading">
+      <h2 id="movement-heading">How ratings moved</h2>
+      <p>Direction of change for participants with both ratings.</p>
+      <div id="movement" class="chart-list"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="coverage-heading">
+      <h2 id="coverage-heading">Survey coverage</h2>
+      <h3>Calling item</h3>
+      <p>The calling item appears on some sessions. Coverage uses valid answers and includes all eligible survey responses in the total.</p>
+      <div id="calling-coverage" class="chart-list"></div>
+      <h3 class="subsection">Responses by training month</h3>
+      <div id="training-months" class="chart-list"></div>
+    </section>
+
+    <aside class="panel caveats" aria-labelledby="caveats-heading">
+      <h2 id="caveats-heading">How to read these results</h2>
+      <ul>
+        <li><strong>Retrospective ratings.</strong> Participants recalled their earlier skill levels after training.</li>
+        <li><strong>No control group.</strong> The survey describes self-reported change and associations.</li>
+        <li><strong>Self-selection.</strong> People who responded may differ from those who skipped the survey or an item.</li>
+        <li><strong>Stated intent.</strong> The calling item measures willingness to call 988.</li>
+      </ul>
+    </aside>
+  </main>
+</body>
+</html>

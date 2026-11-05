@@ -185,3 +185,33 @@ def phase3(
         f"save {perf_counter() - delivery_at:.3f}.",
         err=True,
     )
+
+
+@app.command()
+def dashboard(
+    report: Annotated[
+        Path, typer.Option(exists=True, dir_okay=False, readable=True, help="Public report bundle to copy.")
+    ] = Path("fixtures/report.sample.json"),
+    out: Annotated[
+        Path, typer.Option(file_okay=False, help="Dashboard directory that will receive report.json.")
+    ] = Path("dashboard"),
+) -> None:
+    """Validate and place a public report bundle beside the static dashboard."""
+    from pydantic import ValidationError
+
+    from .schemas import ReportBundle
+
+    destination = out / "report.json"
+    try:
+        content = report.read_bytes()
+        ReportBundle.model_validate_json(content)
+        if report.resolve() != destination.resolve():
+            _write_atomic(destination, content)
+    except ValidationError:
+        typer.echo("Choose a valid public report bundle with schema version 1.0.0.", err=True)
+        raise typer.Exit(1) from None
+    except OSError as error:
+        typer.echo(f"Dashboard report could not be prepared. {error}", err=True)
+        raise typer.Exit(1) from error
+
+    typer.echo(f"Dashboard report ready at {destination}.")

@@ -24,6 +24,9 @@ dependencies = [
 [project.optional-dependencies]
 test = ["hypothesis>=6,<7", "pytest>=8,<10"]
 
+[project.scripts]
+everymind_insight = "everymind_insight.cli:app"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
