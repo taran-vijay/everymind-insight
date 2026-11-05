@@ -1,0 +1,4 @@
+speeder_seconds: 30
+min_duration_seconds: 1
+max_duration_seconds: 7200
+large_reversal_min_drop: 4

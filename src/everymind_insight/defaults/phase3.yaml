@@ -1,0 +1,6 @@
+minimum_n: 10
+minimum_clusters: 8
+dominance_threshold: 0.8
+seed: 988
+bootstrap_resamples: 2000
+shuffles: 2000

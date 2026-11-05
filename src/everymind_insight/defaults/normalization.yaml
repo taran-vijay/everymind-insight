@@ -1,0 +1,59 @@
+likert_aliases:
+  Strongly disagree: 1
+  Disagree: 2
+  Neither agree nor disagree: 3
+  Agree: 4
+  Strongly agree: 5
+presenter_likert_aliases:
+  Neither agree or disagree: 3
+  Very agree: 5
+  Satisfied: 4
+presenter_sensitivity_label: Satisfied
+county_aliases:
+  Anne Arundel: Anne Arundel
+  Anne Arundel County: Anne Arundel
+  Prince George's: Prince George's
+  Prince George's County: Prince George's
+  Montgomery: Montgomery
+  Montgomery County: Montgomery
+  Montgomery County with NAMI MC: Montgomery
+  Fairfax: Fairfax
+  Fairfax County: Fairfax
+  Queen Anne's: Queen Anne's
+  Queen Anne's County: Queen Anne's
+  Harris: Harris
+  Harris County: Harris
+role_aliases:
+  Student: Student
+  Other: Other
+  Other (e.g., community member): Other
+  Caregiver/parent: Caregiver/parent
+  School staff member: School staff member
+  School staff: School staff member
+language_aliases:
+  English: English
+  English (United States): English
+  "English (United States)\u200e": English
+  en: English
+  en-US: English
+  Spanish: Spanish
+  Español: Spanish
+  Español (México): Spanish
+  "Español (México)\u200e": Spanish
+  es: Spanish
+  es-US: Spanish
+date_formats:
+  - '%Y-%m-%d'
+  - '%m/%d/%Y'
+  - '%m/%d/%y'
+timestamp_formats:
+  - '%Y-%m-%d %H:%M:%S'
+  - '%Y-%m-%d %H:%M:%S.%f'
+  - '%Y-%m-%dT%H:%M:%S'
+  - '%Y-%m-%dT%H:%M:%S.%f'
+  - '%m/%d/%Y %H:%M:%S'
+  - '%m/%d/%Y %H:%M'
+  - '%m/%d/%Y %I:%M:%S %p'
+  - '%m/%d/%Y %I:%M %p'
+role_policy: every
+county_suggestion_threshold: 75

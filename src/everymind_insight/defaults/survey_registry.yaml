@@ -1,0 +1,76 @@
+sheet: Survey Data
+fuzzy_threshold: 86
+fuzzy_margin: 5
+questions:
+  id:
+    header: Id
+    aliases: [Response ID, Respondent ID]
+    fuzzy: false
+  start_time:
+    header: Start time
+    aliases: [Started at]
+    fuzzy: false
+  completion_time:
+    header: Completion time
+    aliases: [Completed at]
+    fuzzy: false
+  language:
+    header: Language
+    aliases: [Response language]
+    fuzzy: false
+  roles:
+    header: Are you a....?
+    aliases: ["What is your role?", Participant role]
+  training_date:
+    header: Please enter the date of your training.
+    aliases: [Training date]
+  county:
+    header: "Which county is this training affiliated with?\u00a0"
+    aliases: [Training county]
+  identify_crises_after:
+    header: Please tell us how much you disagree or agree with the statements..I can identify mental health challenges and crises.
+    aliases: [I can identify mental health challenges and crises.]
+    objective_skill: identify_crises
+    objective_timing: after
+  describe_988_after:
+    header: Please tell us how much you disagree or agree with the statements..I can describe 988 and how it works.
+    aliases: [I can describe 988 and how it works.]
+    objective_skill: describe_988
+    objective_timing: after
+  know_when_to_use_988_after:
+    header: Please tell us how much you disagree or agree with the statements..I know when to use 988.
+    aliases: [I know when to use 988.]
+    objective_skill: know_when_to_use_988
+    objective_timing: after
+  identify_crises_before:
+    header: "Now think back to before you took part in the Understanding 988 training.\u00a0\u00a0.I could\u00a0identify mental health challenges and crises."
+    aliases: [I could identify mental health challenges and crises.]
+    objective_skill: identify_crises
+    objective_timing: before
+  describe_988_before:
+    header: "Now think back to before you took part in the Understanding 988 training.\u00a0\u00a0.I could describe 988 and how it works."
+    aliases: [I could describe 988 and how it works.]
+    objective_skill: describe_988
+    objective_timing: before
+  know_when_to_use_988_before:
+    header: "Now think back to before you took part in the Understanding 988 training.\u00a0\u00a0.I knew when to use 988."
+    aliases: [I knew when to use 988.]
+    objective_skill: know_when_to_use_988
+    objective_timing: before
+  presenter_engaged:
+    header: How much do you agree or disagree with the following aspects of the training?.The presenter(s) engaged the participants.
+    aliases: [The presenter(s) engaged the participants.]
+  presenter_knew_subject:
+    header: "How much do you agree or disagree with the following aspects of the training?.The presenter(s) knew the subject matter well.\u00a0"
+    aliases: [The presenter(s) knew the subject matter well.]
+  presenter_organized:
+    header: How much do you agree or disagree with the following aspects of the training?.The training was well organized.
+    aliases: [The training was well organized.]
+  recommend_score:
+    header: How likely are you to recommend the Understanding 988 training to a friend or colleague?
+  calling_score:
+    header: How likely are you to call 988 if you or someone else is experiencing a mental health challenge or crisis?
+  valuable_comment:
+    header: "What was the most valuable thing you learned during the training?\u00a0"
+  improve_comment:
+    header: How can we improve this training in the future?

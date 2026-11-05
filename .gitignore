@@ -218,3 +218,37 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Private inputs and generated reports
+data/
+reports/
+*.[xX][lL][sS]
+*.[xX][lL][sS][xXmMbB]
+*.[cC][sS][vV]
+*.[cC][sS][vV].[gG][zZ]
+*.[cC][sS][vV].[zZ][iI][pP]
+report.json
+ai_log.jsonl
+
+# Local caches and downloaded models
+cache/
+caches/
+model-cache/
+.model-cache/
+models/
+.models/
+huggingface/
+*.safetensors
+*.onnx
+*.gguf
+*.tflite
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.h5
+*.pkl
+*.pickle
+*.joblib
+*.npy
+*.npz
