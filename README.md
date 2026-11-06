@@ -97,7 +97,7 @@ The dashboard has five sections: Overview, Learning outcomes, Community reach, P
 
 Learning outcomes includes an **Exclude flagged responses** cohort selector. Community comparisons appear only when the bundle contains the selected subgroup metrics; the sample does not include those comparisons. Feedback displays report-supplied findings, actions, and coded themes. Findings with unavailable or suppressed supporting metrics are withheld. **Print view** prints the section currently open.
 
-The frontend uses native HTML, CSS, JavaScript, and a bundled Manrope font (license in `dashboard/fonts/OFL.txt`). It requires no frontend build step or external font service. Opening `dashboard/index.html` directly also works: select a report with **Open report**.
+The frontend uses native HTML, CSS, JavaScript, and platform fonts. It requires no frontend build step or external font service. Opening `dashboard/index.html` directly also works: select a report with **Open report**.
 
 For a quick preview from the repository root, without installing Python dependencies:
 

@@ -7,17 +7,17 @@ const skills = [
   ["know_when_to_use_988", "Know when to use 988"],
 ];
 const views = {
-  overview: ["Training overview", "What participants learned. Where support can go further."],
-  learning: ["Learning outcomes", "Look more closely at reported confidence and change."],
-  community: ["Community reach", "Understand who is represented, and where evidence is thinner."],
-  feedback: ["Participant feedback", "Connect participant perspectives to thoughtful next steps."],
-  methods: ["Data & methods", "The evidence, the checks, and the limits behind this report."],
+  overview: ["988 training insights.", "What participants took away. What deserves a closer look. And where to go from here."],
+  learning: ["Learning outcomes.", "A closer look at confidence before and after training."],
+  community: ["Community reach.", "Who is represented in the feedback—and where the evidence is thinner."],
+  feedback: ["Participant feedback.", "Listen to what participants valued. Turn their feedback into a next step."],
+  methods: ["Behind the numbers.", "The methods, quality checks, and limitations that give these results context."],
 };
 const integer = new Intl.NumberFormat("en-US");
 const percent = new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 });
 const decimal = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
-const monthFormat = new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit", timeZone: "UTC" });
+const monthFormat = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 const $ = (selector) => document.querySelector(selector);
 let report = null;
 let requestNumber = 0;
@@ -89,6 +89,7 @@ function monthLabel(value) {
 function navigate(focus = false) {
   const requested = location.hash.slice(1);
   const view = Object.hasOwn(views, requested) ? requested : "overview";
+  $("#main-content").dataset.view = view;
   for (const node of document.querySelectorAll(".view")) node.hidden = node.id !== `view-${view}`;
   for (const node of document.querySelectorAll("nav [data-view]")) {
     if (node.dataset.view === view) node.setAttribute("aria-current", "page");
@@ -105,44 +106,28 @@ function navigate(focus = false) {
 
 function renderSummary() {
   const total = Data.find(report.metrics, "usable_responses");
-  const flagged = Data.find(report.metrics, "flagged_responses");
-  const coverage = metric("calling_coverage", { group_by: "overall", group: "Overall" });
   const months = report.metrics.filter((entry) => entry.metric_id === "subgroup_response_count"
     && entry.dimensions.cohort === "all_responses" && entry.dimensions.group_by === "training_month"
     && /^\d{4}-(0[1-9]|1[0-2])$/.test(entry.dimensions.group));
   $("#report-summary").replaceChildren(
-    stat("Survey responses", countText(total), "With usable response IDs"),
-    stat("Training months", months.length ? integer.format(months.length) : "Unavailable", "Represented in this report"),
-    stat("Calling-question coverage", shareText(coverage), Data.visibleShare(coverage) && Data.count(coverage.numerator)
-      && Data.count(coverage.denominator) ? `${integer.format(coverage.numerator)} of ${integer.format(coverage.denominator)} answered` : "Coverage varies by session"),
-    stat("Responses flagged", countText(flagged), "For response-quality review"),
+    stat("survey responses", countText(total)),
+    stat("training months", months.length ? integer.format(months.length) : "Unavailable"),
   );
 }
 
 function comparisonPlot(before, after, showIntervals) {
-  const plot = svg("svg", { viewBox: "0 0 300 46", preserveAspectRatio: "none", "aria-hidden": "true" }, "plot");
+  const plot = svg("svg", { viewBox: "0 0 300 64", preserveAspectRatio: "none", "aria-hidden": "true" }, "plot");
   const x = (value) => 7 + value * 286;
   const line = (x1, y1, x2, y2, className) => plot.append(svg("line", { x1, y1, x2, y2, "vector-effect": "non-scaling-stroke" }, className));
-  for (const tick of [0, .25, .5, .75, 1]) line(x(tick), 0, x(tick), 46, "gridline");
-  if (Data.visibleShare(before) && Data.visibleShare(after)) line(x(before.value), 17, x(after.value), 30, "connector");
-  for (const [entry, y, series] of [[before, 17, "before"], [after, 30, "after"]]) {
+  for (const tick of [0, .25, .5, .75, 1]) line(x(tick), 0, x(tick), 64, "gridline");
+  for (const [entry, y, series] of [[before, 19, "before"], [after, 45, "after"]]) {
     if (!Data.visibleShare(entry)) continue;
+    plot.append(svg("rect", { x: x(0), y: y - 5, width: entry.value * 286, height: 10, rx: 5 }, `${series} bar-mark`));
     const ci = Data.interval(entry);
     if (showIntervals && ci) {
       line(x(ci.lower), y, x(ci.upper), y, `${series} whisker`);
       line(x(ci.lower), y - 4, x(ci.lower), y + 4, `${series} whisker`);
       line(x(ci.upper), y - 4, x(ci.upper), y + 4, `${series} whisker`);
-    }
-    // Round-ended lines keep markers circular when the SVG changes width.
-    const point = svg("line", { x1: x(entry.value), x2: x(entry.value), y1: y - .1, y2: y + .1,
-      "stroke-linecap": "round", "vector-effect": "non-scaling-stroke" }, series);
-    point.style.strokeWidth = "7px";
-    plot.append(point);
-    if (series === "before") {
-      const center = point.cloneNode();
-      center.style.strokeWidth = "3px";
-      center.style.stroke = "white";
-      plot.append(center);
     }
   }
   return plot;
@@ -157,14 +142,12 @@ function renderObjectives() {
     const gain = metric("agreement_gain", { skill });
     const row = html("div", "", "comparison-row");
     const name = html("div", "", "objective-name");
-    name.append(html("span", label), html("small", `Before ${shareText(before)}`),
+    const objectiveLink = link(label, "#learning");
+    objectiveLink.className = "objective-link";
+    name.append(objectiveLink, html("small", `${shareText(before)} recalled before`),
       html("small", Data.visibleShare(after) ? `${integer.format(after.n)} paired responses` : unavailable(after)));
     const chart = html("div", "", "comparison-plot");
     chart.append(comparisonPlot(before, after, $("#show-intervals").checked));
-    const axis = html("div", "", "axis");
-    axis.setAttribute("aria-hidden", "true");
-    for (const tick of ["0", "25", "50", "75", "100% "]) axis.append(html("span", tick.trim()));
-    chart.append(axis);
     const current = html("div", shareText(after), "metric-value");
     const change = html("div", gainText(gain), `gain${gain?.value < 0 ? " negative" : ""}`);
     const accessible = html("span", `Recalled before ${shareText(before)}, ${baseText(before)}. ${intervalText(before)}. Current ${shareText(after)}, ${baseText(after)}. ${intervalText(after)}. Change ${gainText(gain)}.`, "sr-only");
@@ -172,12 +155,21 @@ function renderObjectives() {
     row.append(name, chart, current, change);
     container.append(row);
   }
+  const scale = html("div", "", "comparison-scale");
+  scale.setAttribute("aria-hidden", "true");
+  const axis = html("div", "", "axis");
+  for (const tick of ["0", "25", "50", "75", "100%"]) axis.append(html("span", tick));
+  scale.append(html("span"), axis, html("span"), html("span"));
+  container.append(scale);
 }
 
 function renderFocus() {
   const panel = $("#focus-panel");
-  panel.replaceChildren(html("h2", "Where to focus next"));
-  panel.firstChild.id = "focus-heading";
+  const introduction = html("div", "", "focus-intro");
+  const heading = html("h2", "Where there’s room to grow.");
+  heading.id = "focus-heading";
+  introduction.append(heading, html("p", "A remaining gap is a useful place to start a conversation about the next training."));
+  panel.replaceChildren(introduction);
   const gaps = skills.map(([skill, label]) => ({ skill, label, entry: metric("below_agree_after", { skill }) }));
   if (!gaps.every(({ entry }) => Data.visibleShare(entry))) {
     panel.append(html("p", "A complete, released set of gap estimates is needed to compare objectives.", "focus-description"), link("Explore the available outcomes", "#learning"));
@@ -186,10 +178,12 @@ function renderFocus() {
   gaps.sort((a, b) => b.entry.value - a.entry.value);
   const largest = gaps[0];
   const tied = gaps.filter(({ entry }) => Math.abs(entry.value - largest.entry.value) < 1e-10).length > 1;
-  panel.append(html("div", percent.format(largest.entry.value), "focus-stat"));
+  const evidence = html("div", "", "focus-evidence");
+  evidence.append(html("div", percent.format(largest.entry.value), "focus-stat"));
   const description = html("p", "", "focus-description");
   description.append(html("span", "rated their ability to "), html("span", largest.label.toLowerCase(), "focus-skill"), html("span", ` below Agree after training. ${tied ? "Joint-largest" : "Largest"} observed gap; ${baseText(largest.entry)}.`));
-  panel.append(description);
+  evidence.append(description);
+  panel.append(evidence);
   const finding = report.findings.find((entry) => Data.safeFinding(entry, report.metrics)
     && entry.metric_refs.some((ref) => ref.metric_id === "below_agree_after" && ref.dimensions.skill === largest.skill
       && ref.dimensions.cohort === "all_responses"));
@@ -197,7 +191,8 @@ function renderFocus() {
   action.append(html("h3", finding ? "Suggested next step" : "A starting point for review"),
     html("p", finding ? finding.action : "Review this objective alongside participant feedback before deciding how to adapt the training."));
   if (finding) action.append(html("span", `${finding.confidence[0].toUpperCase() + finding.confidence.slice(1)} confidence`, "confidence-tag"));
-  panel.append(action, link("Read findings & evidence", "#feedback"));
+  action.append(link("Read the finding", "#feedback"));
+  panel.append(action);
 }
 
 function movementRow(skill, label, cohort) {
@@ -242,7 +237,7 @@ function renderMonths() {
     const track = html("div", "", "month-track");
     if (visible) {
       const bar = html("div", "", "month-bar");
-      bar.style.height = `${entry.value / maximum * 100}px`;
+      bar.style.height = `${entry.value / maximum * 150}px`;
       if (entry.value === 0) bar.style.minHeight = "0";
       track.append(html("span", integer.format(entry.value), "month-count"), bar);
     } else {
