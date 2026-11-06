@@ -92,3 +92,23 @@ Run these commands from the repository folder after installing the project. They
 ```
 
 Open [the local dashboard](http://127.0.0.1:8000/). When an aggregate report bundle is ready, pass its path to `--report` and refresh the page. The generated `report.json` is ignored by Git. The page reads the report bundle schema used by the sample fixture.
+
+The dashboard has five sections: Overview, Learning outcomes, Community reach, Participant feedback, and Data & methods. Use **Open report** to read a different aggregate report JSON locally in the browser. The synthetic-data banner stays visible for sample reports. Invalid files leave the current report in place.
+
+Learning outcomes includes an **Exclude flagged responses** cohort selector. Community comparisons appear only when the bundle contains the selected subgroup metrics; the sample does not include those comparisons. Feedback displays report-supplied findings, actions, and coded themes. Findings with unavailable or suppressed supporting metrics are withheld. **Print view** prints the section currently open.
+
+The frontend uses native HTML, CSS, JavaScript, and a bundled Manrope font (license in `dashboard/fonts/OFL.txt`). It requires no frontend build step or external font service. Opening `dashboard/index.html` directly also works: select a report with **Open report**.
+
+For a quick preview from the repository root, without installing Python dependencies:
+
+```sh
+python3 -m http.server 8000 --bind 127.0.0.1
+```
+
+Then open [the dashboard](http://127.0.0.1:8000/dashboard/). It falls back to the synthetic fixture when no generated `dashboard/report.json` exists.
+
+Run the frontend data-contract checks with Node.js 18 or later:
+
+```sh
+node --test tests/dashboard.test.cjs
+```

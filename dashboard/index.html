@@ -3,63 +3,84 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <title>EveryMind 988 Training Survey</title>
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f7f9f8">
+  <title>EveryMind · Training insights</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="fonts/manrope-variable.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="styles.css">
+  <script src="report-data.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
-  <header class="page-header">
-    <p class="eyebrow">EveryMind · Training survey</p>
-    <h1>988 Training Survey</h1>
-    <p class="intro">What participants reported learning, where gaps remain, and who answered.</p>
-    <p id="draft-banner" class="draft" hidden>DRAFT - synthetic sample data</p>
-    <div class="report-controls">
-      <label for="report-picker">Open a report</label>
-      <input type="file" id="report-picker" accept=".json,application/json">
-    </div>
-    <p id="load-status" role="status" aria-live="polite">Loading the report…</p>
-    <noscript>This dashboard requires JavaScript to read the report and display its charts.</noscript>
-  </header>
-
-  <main id="dashboard" hidden>
-    <section class="panel" aria-labelledby="objectives-heading">
-      <h2 id="objectives-heading">Agreement by objective</h2>
-      <p>Recalled-before and current ratings of Agree or Strongly agree. Whiskers show 95% confidence intervals.</p>
-      <div id="objectives" class="chart-list"></div>
-      <div class="axis" aria-hidden="true"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
-    </section>
-
-    <section class="panel" aria-labelledby="gap-heading">
-      <h2 id="gap-heading">Remaining gap</h2>
-      <p>Participants whose current rating was below Agree.</p>
-      <div id="remaining-gap" class="chart-list"></div>
-    </section>
-
-    <section class="panel" aria-labelledby="movement-heading">
-      <h2 id="movement-heading">How ratings moved</h2>
-      <p>Direction of change for participants with both ratings.</p>
-      <div id="movement" class="chart-list"></div>
-    </section>
-
-    <section class="panel" aria-labelledby="coverage-heading">
-      <h2 id="coverage-heading">Survey coverage</h2>
-      <h3>Calling item</h3>
-      <p>The calling item appears on some sessions. Coverage uses valid answers and includes all eligible survey responses in the total.</p>
-      <div id="calling-coverage" class="chart-list"></div>
-      <h3 class="subsection">Responses by training month</h3>
-      <div id="training-months" class="chart-list"></div>
-    </section>
-
-    <aside class="panel caveats" aria-labelledby="caveats-heading">
-      <h2 id="caveats-heading">How to read these results</h2>
-      <ul>
-        <li><strong>Retrospective ratings.</strong> Participants recalled their earlier skill levels after training.</li>
-        <li><strong>No control group.</strong> The survey describes self-reported change and associations.</li>
-        <li><strong>Self-selection.</strong> People who responded may differ from those who skipped the survey or an item.</li>
-        <li><strong>Stated intent.</strong> The calling item measures willingness to call 988.</li>
-      </ul>
-    </aside>
-  </main>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <aside class="sidebar">
+    <a class="brand" href="#overview" aria-label="EveryMind training insights home">EveryMind<span>Training insights</span></a>
+    <div class="program-label"><span class="program-dot" aria-hidden="true"></span>Understanding 988</div>
+    <nav aria-label="Report sections">
+      <a href="#overview" data-view="overview"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Overview</a>
+      <a href="#learning" data-view="learning"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4v16h17M8 15l4-5 4 2 5-7"/></svg>Learning outcomes</a>
+      <a href="#community" data-view="community"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 13a5 5 0 0 1 3 5v3"/></svg>Community reach</a>
+      <a href="#feedback" data-view="feedback"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 16a2 2 0 0 1-2 2H8l-5 3V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2ZM7 8h9M7 12h6"/></svg>Participant feedback</a>
+      <a href="#methods" data-view="methods"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9ZM14 3v6h6M8 13h8M8 17h5"/></svg>Data &amp; methods</a>
+    </nav>
+    <div class="sidebar-note"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><div><strong>Built around privacy</strong><p>Report files are read locally in your browser.</p></div></div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar">
+      <p>EveryMind <span aria-hidden="true">/</span> 988 awareness training</p>
+      <div class="topbar-actions">
+        <button id="print-report" class="button button-quiet" type="button" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7Z"/></svg>Print view</button>
+        <label class="button button-primary" for="report-picker"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/></svg>Open report</label>
+        <input class="file-input" type="file" id="report-picker" accept=".json,application/json">
+      </div>
+    </header>
+    <main id="main-content" tabindex="-1">
+      <div class="page-heading"><div><h1 id="page-title">Training overview</h1><p id="page-description">What participants learned. Where support can go further.</p></div><p class="report-date" id="report-date"></p></div>
+      <div id="draft-banner" class="sample-banner" hidden><span class="sample-tag">Sample report</span><p>Fictional data for exploring the dashboard. Use your survey report for findings.</p></div>
+      <p id="load-status" class="load-status" role="status" aria-live="polite">Opening the report…</p>
+      <noscript><div class="empty-state">Enable JavaScript to open a report and explore its results.</div></noscript>
+      <div id="initial-state" class="empty-state" hidden><h2>Your next report starts here.</h2><p>Choose an aggregate report JSON using “Open report” above. Survey responses stay on your computer.</p></div>
+      <div id="dashboard" hidden>
+        <section id="view-overview" class="view" aria-label="Overview">
+          <dl id="report-summary" class="summary-strip"></dl>
+          <div class="overview-grid">
+            <section class="panel learning-panel" aria-labelledby="objectives-heading">
+              <div class="section-heading"><div><h2 id="objectives-heading">Confidence before and after</h2><p>Share selecting Agree or Strongly agree.</p></div><a class="text-link" href="#learning">Explore outcomes <span aria-hidden="true">↗</span></a></div>
+              <div class="chart-toolbar"><div class="legend"><span><i class="legend-before"></i>Recalled before</span><span><i class="legend-after"></i>Current</span></div><label class="check-control"><input type="checkbox" id="show-intervals" checked>Show intervals</label></div>
+              <div class="comparison-head" aria-hidden="true"><span>Learning objective</span><span>Agreement</span><span>Current</span><span>Change</span></div>
+              <div id="objectives"></div>
+              <p class="chart-footnote">“Before” ratings were recalled after training. Changes describe self-reports; they do not establish a training effect.</p>
+            </section>
+            <aside id="focus-panel" class="focus-panel" aria-labelledby="focus-heading"></aside>
+          </div>
+          <div class="secondary-grid">
+            <section class="panel" aria-labelledby="movement-heading"><div class="section-heading"><div><h2 id="movement-heading">How ratings moved</h2><p>Change among participants with both ratings.</p></div></div><div id="movement"></div><div class="legend movement-legend"><span><i class="legend-up"></i>Higher</span><span><i class="legend-same"></i>Unchanged</span><span><i class="legend-down"></i>Lower</span></div></section>
+            <section class="panel" aria-labelledby="months-heading"><div class="section-heading"><div><h2 id="months-heading">Participation over time</h2><p>Survey responses by training month.</p></div></div><div id="training-months" class="month-chart" tabindex="0" role="region" aria-label="Training-month response counts"></div><p class="chart-footnote" id="month-note"></p></section>
+          </div>
+          <div class="reading-note"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></svg><p>A little context matters. These are retrospective, self-reported ratings from survey respondents.</p><a class="text-link" href="#methods">Read the limitations <span aria-hidden="true">↗</span></a></div>
+        </section>
+        <section id="view-learning" class="view" aria-label="Learning outcomes" hidden>
+          <div class="view-toolbar"><p>Compare agreement, remaining gaps, and individual rating changes.</p><label>Response cohort<select id="learning-cohort"><option value="all_responses">All responses</option><option value="excluding_flagged">Exclude flagged responses</option></select></label></div>
+          <div id="learning-details" class="detail-list"></div>
+        </section>
+        <section id="view-community" class="view" aria-label="Community reach" hidden>
+          <section class="panel"><div class="section-heading"><div><h2>Learning across communities</h2><p>Descriptive comparisons among complete pairs. Groups may differ in who attended.</p></div></div><div class="filter-bar"><label>Compare by<select id="community-group"><option value="county">County</option><option value="role">Participant role</option><option value="language">Language</option><option value="training_month">Training month</option></select></label><label>Learning objective<select id="community-skill"><option value="identify_crises">Identify crises</option><option value="describe_988">Describe 988</option><option value="know_when_to_use_988">Know when to use 988</option></select></label></div><div id="community-results"></div><p class="chart-footnote">Descriptive shares are unadjusted. Role groups can overlap when participants select multiple roles. Suppressed values are never shown or reconstructed.</p></section>
+          <section class="coverage-section" aria-labelledby="calling-heading"><h2 id="calling-heading">Who answered the calling question?</h2><p>The question appears in some training sessions. Coverage is separate from willingness to call 988.</p><div id="calling-coverage"></div></section>
+        </section>
+        <section id="view-feedback" class="view" aria-label="Participant feedback" hidden>
+          <section aria-labelledby="recommendations-heading"><div class="section-heading"><div><h2 id="recommendations-heading">From feedback to next steps</h2><p>Findings and suggested actions supplied by the report, with their supporting evidence.</p></div></div><div id="findings" class="finding-list"></div></section>
+          <section class="feedback-section" aria-labelledby="themes-heading"><div class="section-heading"><div><h2 id="themes-heading">What participants shared</h2><p>Coded themes from open-ended responses. No individual comments are displayed.</p></div></div><div id="themes" class="secondary-grid"></div></section>
+        </section>
+        <section id="view-methods" class="view" aria-label="Data and methods" hidden>
+          <section class="panel"><div class="section-heading"><div><h2>A report you can trace</h2><p>Quality checks and context for interpreting these results.</p></div></div><dl id="quality-summary" class="quality-summary"></dl><div id="quality-notes"></div></section>
+          <section class="methods-section" aria-labelledby="limitations-heading"><h2 id="limitations-heading">How to read the results</h2><div id="caveats" class="caveat-grid"></div></section>
+          <section class="panel methods-section"><h2>Metric definitions</h2><p>Definitions supplied by this report.</p><div id="definitions" class="definitions"></div></section>
+          <p id="provenance" class="provenance"></p>
+        </section>
+      </div>
+      <footer class="page-footer"><span>EveryMind · Understanding 988</span><span>Community learning. Thoughtful next steps.</span></footer>
+    </main>
+  </div>
 </body>
 </html>
