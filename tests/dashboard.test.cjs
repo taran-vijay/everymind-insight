@@ -9,6 +9,63 @@ test("accepts the shipped public report without changing its values", () => {
   assert.equal(Data.validate(report), report);
   assert.deepEqual(report, fixture);
 });
+test("rejects malformed metadata and JSON objects that would throw during rendering", () => {
+  for (const [field, values] of [
+    ["generated_at", [null, 0, {}, { toString: null, valueOf: null }, "not a date", "2030-01-01", "2030-01-01T12:00:00", "2030-02-30T12:00:00Z", "2030-01-01T24:00:00Z"]],
+    ["input_hash", [null, 123, {}, { toString: null, valueOf: null }, "", "a".repeat(63), "G".repeat(64)]],
+  ]) {
+    for (const value of values) {
+      const incoming = sample();
+      incoming[field] = value;
+      // Use JSON round-tripping so these regressions exercise actual uploaded values.
+      assert.throws(() => Data.validate(JSON.parse(JSON.stringify(incoming))), /aggregate report bundle/);
+    }
+    const missing = sample();
+    delete missing[field];
+    assert.throws(() => Data.validate(missing), /aggregate report bundle/);
+  }
+});
+test("accepts generated timezone-aware timestamps including offsets and microseconds", () => {
+  for (const generated_at of ["2030-01-01T00:00:00Z", "2030-01-01T00:00:00.123456+00:00", "2030-01-01T10:30:00-05:00", "2028-02-29T23:59:59+05:30"]) {
+    const report = sample();
+    report.generated_at = generated_at;
+    assert.equal(Data.validate(report), report);
+    assert.equal(report.generated_at, generated_at);
+  }
+});
+test("rejects missing or malformed ledger provenance and mixed input fingerprints", () => {
+  for (const mutate of [
+    (metric) => { delete metric.provenance; },
+    (metric) => { metric.provenance = null; },
+    (metric) => { metric.provenance.input_hash = "a".repeat(64); },
+    (metric) => { metric.provenance.config_hash = "invalid"; },
+    (metric) => { metric.provenance.method = {}; },
+    (metric) => { metric.provenance.population = []; },
+    (metric) => { metric.provenance.parameters = null; },
+    (metric) => { metric.provenance.parameters = { seed: {} }; },
+  ]) {
+    const report = sample();
+    mutate(report.metrics[0]);
+    assert.throws(() => Data.validate(report), /provenance|fingerprint/);
+  }
+  const report = sample();
+  delete report.metrics[0].provenance.parameters;
+  report.metrics[1].provenance.parameters = { seed: 988, threshold: .8, adjusted: false, method: "bootstrap" };
+  assert.equal(Data.validate(report), report);
+});
+test("checks theme diagnostic references while allowing the schema's empty default", () => {
+  const valid = sample();
+  const question = valid.theme_data.questions[0];
+  question.diagnostics = [structuredClone(question.answered)];
+  assert.equal(Data.validate(valid), valid);
+  delete question.diagnostics;
+  assert.equal(Data.validate(valid), valid);
+  for (const diagnostics of [null, {}, [{ metric_id: "absent", dimensions: {} }], [{ ...question.answered, dimensions: { question: "other_question" } }]]) {
+    const report = sample();
+    report.theme_data.questions[0].diagnostics = diagnostics;
+    assert.throws(() => Data.validate(report), /theme references/);
+  }
+});
 test("rejects every numeric field on a suppressed metric", () => {
   for (const field of ["value", "numerator", "denominator", "n", "ci"]) {
     const report = sample();
@@ -82,6 +139,7 @@ test("rejects unsupported formats and malformed written content before rendering
     (report) => { report.caveats = [null]; },
     (report) => { report.quality_report.notes = [{}]; },
     (report) => { report.theme_data.questions[0].themes[0].method = "unknown"; },
+    (report) => { report.theme_data.status = "unknown"; },
   ]) {
     const report = sample();
     mutate(report);

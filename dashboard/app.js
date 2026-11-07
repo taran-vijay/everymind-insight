@@ -7,20 +7,55 @@ const skills = [
   ["know_when_to_use_988", "Know when to use 988"],
 ];
 const views = {
-  overview: ["988 training insights.", "What participants took away. What deserves a closer look. And where to go from here."],
-  learning: ["Learning outcomes.", "A closer look at confidence before and after training."],
-  community: ["Community reach.", "Who is represented in the feedback—and where the evidence is thinner."],
-  feedback: ["Participant feedback.", "Listen to what participants valued. Turn their feedback into a next step."],
-  methods: ["Behind the numbers.", "The methods, quality checks, and limitations that give these results context."],
+  overview: ["Training insights", "Participant learning, remaining gaps, and what to review next."],
+  learning: ["Learning outcomes", "Agreement and individual rating changes, with the evidence behind each estimate."],
+  community: ["Community reach", "Learning across participant groups, and where the evidence is limited."],
+  feedback: ["Participant feedback", "Report findings and coded themes to inform the next training."],
+  methods: ["Data & methods", "Quality checks, definitions, and limitations for reading this report."],
 };
 const integer = new Intl.NumberFormat("en-US");
 const percent = new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 });
 const decimal = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 const monthFormat = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
-const $ = (selector) => document.querySelector(selector);
+let renderRoot = document;
+const $ = (selector) => renderRoot.querySelector(selector);
 let report = null;
 let requestNumber = 0;
+const rememberedRoutes = {};
+let activeView = "";
+let activeTarget = "";
+
+function route() {
+  const [requested, query = ""] = location.hash.slice(1).split("?");
+  return { view: Object.hasOwn(views, requested) ? requested : "overview", params: new URLSearchParams(query) };
+}
+function destination(view, values = {}) {
+  const query = new URLSearchParams(Object.entries(values).filter(([, value]) => value));
+  return `#${view}${query.size ? `?${query}` : ""}`;
+}
+function setRoute(values) {
+  const current = route();
+  for (const [key, value] of Object.entries(values)) {
+    if (value) current.params.set(key, value);
+    else current.params.delete(key);
+  }
+  location.hash = destination(current.view, Object.fromEntries(current.params));
+}
+function animateResult(node) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  for (const animation of node.getAnimations()) animation.cancel();
+  node.animate([{ opacity: .72 }, { opacity: 1 }], { duration: 180, easing: "ease-out" });
+}
+function announce(text) { $("#interaction-status").textContent = text; }
+function positionIndicator() {
+  const selected = document.querySelector('nav a[aria-current="page"]');
+  const indicator = document.querySelector("#nav-indicator");
+  if (!selected || !indicator) return;
+  const width = selected.offsetWidth;
+  const left = selected.offsetLeft;
+  indicator.style.transform = `translateX(${left}px) scaleX(${width})`;
+}
 
 function html(tag, text = "", className = "") {
   const node = document.createElement(tag);
@@ -86,22 +121,71 @@ function monthLabel(value) {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(value) ? monthFormat.format(new Date(`${value}-01T00:00:00Z`)) : value;
 }
 
-function navigate(focus = false) {
-  const requested = location.hash.slice(1);
-  const view = Object.hasOwn(views, requested) ? requested : "overview";
+function navigate(focus = false, initial = false) {
+  const { view, params } = route();
+  if (report && view === "learning" && params.has("cohort")
+    && (params.get("cohort") !== "excluding_flagged" || $("#learning-cohort option[value=excluding_flagged]").disabled)) {
+    params.delete("cohort");
+    history.replaceState(null, "", destination(view, Object.fromEntries(params)));
+  }
+  const changed = view !== activeView;
+  if (changed) announce("");
+  rememberedRoutes[view] = destination(view, Object.fromEntries(params));
+  $("#section-picker").value = view;
   $("#main-content").dataset.view = view;
   for (const node of document.querySelectorAll(".view")) node.hidden = node.id !== `view-${view}`;
   for (const node of document.querySelectorAll("nav [data-view]")) {
+    node.href = rememberedRoutes[node.dataset.view] || `#${node.dataset.view}`;
     if (node.dataset.view === view) node.setAttribute("aria-current", "page");
     else node.removeAttribute("aria-current");
   }
   $("#page-title").textContent = views[view][0];
   $("#page-description").textContent = views[view][1];
   document.title = `${views[view][0]} · EveryMind`;
-  if (focus && requested !== "main-content") {
-    $("#main-content").focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: "instant" });
+  if (report) {
+    if (view === "overview") {
+      const movement = params.get("chart") === "movement";
+      $("#agreement-chart").hidden = movement;
+      $("#rating-chart").hidden = !movement;
+      $("#show-intervals").checked = params.get("intervals") !== "off";
+      $("#show-intervals").closest("label").hidden = movement;
+      for (const button of document.querySelectorAll("[data-chart]")) button.setAttribute("aria-pressed", String(button.dataset.chart === (movement ? "movement" : "agreement")));
+      $("#chart-description").textContent = movement ? "Individual changes among participants with both ratings." : "Participants selecting Agree or Strongly agree.";
+      renderObjectives(changed || initial);
+    } else if (view === "learning") {
+      const filtered = params.get("cohort") === "excluding_flagged" && !$("#learning-cohort option[value=excluding_flagged]").disabled;
+      $("#learning-cohort").value = filtered ? "excluding_flagged" : "all_responses";
+      renderLearning();
+    } else if (view === "community") {
+      const group = params.get("group");
+      $("#community-group").value = ["county", "role", "language", "training_month"].includes(group) ? group : "county";
+      $("#community-skill").value = skills.some(([id]) => id === params.get("skill")) ? params.get("skill") : skills[0][0];
+      renderCommunity();
+    }
   }
+  const target = report && (view === "learning" ? document.getElementById(`outcome-${params.get("skill")}`) : view === "feedback" ? document.getElementById(`finding-${params.get("finding")}`) : null);
+  const targetKey = target?.id || "";
+  if ((focus && (changed || targetKey !== activeTarget)) || (initial && target)) {
+    if (target) {
+      if (focus) target.focus({ preventScroll: true });
+      target.scrollIntoView({ block: "start", behavior: "instant" });
+    } else {
+      $("#main-content").focus({ preventScroll: true });
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }
+  if (focus) {
+    const section = $(`#view-${view}`);
+    if (changed) {
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) section.animate([{ opacity: 0, transform: "translateY(5px)" }, { opacity: 1, transform: "none" }], { duration: 220, easing: "cubic-bezier(.22,1,.36,1)" });
+    } else if (view === "learning" || view === "community") animateResult($(view === "learning" ? "#learning-details" : "#community-results"));
+    if (view === "learning") announce(`Learning outcomes updated. ${$("#learning-cohort").selectedOptions[0].textContent}.`);
+    if (view === "community") announce(`Community comparison updated. ${$("#community-skill").selectedOptions[0].textContent}, by ${$("#community-group").selectedOptions[0].textContent.toLowerCase()}.`);
+    if (view === "overview" && !changed) announce(params.get("chart") === "movement" ? "Rating movement chart." : `Agreement chart. Intervals ${$("#show-intervals").checked ? "shown" : "hidden"}.`);
+  }
+  activeView = view;
+  activeTarget = targetKey;
+  positionIndicator();
 }
 
 function renderSummary() {
@@ -122,7 +206,7 @@ function comparisonPlot(before, after, showIntervals) {
   for (const tick of [0, .25, .5, .75, 1]) line(x(tick), 0, x(tick), 64, "gridline");
   for (const [entry, y, series] of [[before, 19, "before"], [after, 45, "after"]]) {
     if (!Data.visibleShare(entry)) continue;
-    plot.append(svg("rect", { x: x(0), y: y - 5, width: entry.value * 286, height: 10, rx: 5 }, `${series} bar-mark`));
+    plot.append(svg("rect", { x: x(0), y: y - 5, width: entry.value * 286, height: 10, rx: 1 }, `${series} bar-mark`));
     const ci = Data.interval(entry);
     if (showIntervals && ci) {
       line(x(ci.lower), y, x(ci.upper), y, `${series} whisker`);
@@ -133,16 +217,21 @@ function comparisonPlot(before, after, showIntervals) {
   return plot;
 }
 
-function renderObjectives() {
+function renderObjectives(animate = false) {
   const container = $("#objectives");
   container.replaceChildren();
-  for (const [skill, label] of skills) {
+  const intervals = skills.flatMap(([skill]) => [metric("agree_before", { skill }), metric("agree_after", { skill })]).map(Data.interval).filter(Boolean);
+  const levels = [...new Set(intervals.map((ci) => percent.format(ci.level)))];
+  $("#interval-explanation").textContent = levels.length === 1 ? `Whiskers: ${levels[0]} confidence intervals` : "Whiskers: confidence intervals; see outcomes for levels";
+  $("#interval-explanation").hidden = !$("#show-intervals").checked || !intervals.length;
+  for (const [index, [skill, label]] of skills.entries()) {
     const before = metric("agree_before", { skill });
     const after = metric("agree_after", { skill });
     const gain = metric("agreement_gain", { skill });
-    const row = html("div", "", "comparison-row");
+    const row = html("div", "", `comparison-row${animate ? " chart-animate" : ""}`);
+    row.style.setProperty("--row", index);
     const name = html("div", "", "objective-name");
-    const objectiveLink = link(label, "#learning");
+    const objectiveLink = link(label, destination("learning", { skill }));
     objectiveLink.className = "objective-link";
     name.append(objectiveLink, html("small", `${shareText(before)} recalled before`),
       html("small", Data.visibleShare(after) ? `${integer.format(after.n)} paired responses` : unavailable(after)));
@@ -166,9 +255,9 @@ function renderObjectives() {
 function renderFocus() {
   const panel = $("#focus-panel");
   const introduction = html("div", "", "focus-intro");
-  const heading = html("h2", "Where there’s room to grow.");
+  const heading = html("h2", "A closer look");
   heading.id = "focus-heading";
-  introduction.append(heading, html("p", "A remaining gap is a useful place to start a conversation about the next training."));
+  introduction.append(heading);
   panel.replaceChildren(introduction);
   const gaps = skills.map(([skill, label]) => ({ skill, label, entry: metric("below_agree_after", { skill }) }));
   if (!gaps.every(({ entry }) => Data.visibleShare(entry))) {
@@ -190,8 +279,10 @@ function renderFocus() {
   const action = html("div", "", "focus-action");
   action.append(html("h3", finding ? "Suggested next step" : "A starting point for review"),
     html("p", finding ? finding.action : "Review this objective alongside participant feedback before deciding how to adapt the training."));
-  if (finding) action.append(html("span", `${finding.confidence[0].toUpperCase() + finding.confidence.slice(1)} confidence`, "confidence-tag"));
-  action.append(link("Read the finding", "#feedback"));
+  if (finding) {
+    action.append(html("span", `${finding.confidence[0].toUpperCase() + finding.confidence.slice(1)} confidence`, "confidence-tag"));
+    action.append(link("Read the evidence →", destination("feedback", { finding: String(report.findings.indexOf(finding)) })));
+  } else action.append(link("Read participant feedback →", "#feedback"));
   panel.append(action);
 }
 
@@ -243,7 +334,10 @@ function renderMonths() {
     } else {
       track.append(html("span", unavailable(entry), "month-hidden"), html("div", "", "withheld-slot"));
     }
-    column.append(track, html("span", monthLabel(entry.dimensions.group), "month-label"));
+    const label = html("span", "", "month-label");
+    const [month, year] = monthLabel(entry.dimensions.group).split(" ");
+    label.append(html("span", month), html("span", year, "month-year"));
+    column.append(track, label);
     container.append(column);
   }
   $("#month-note").textContent = `Counts below ${report.suppression_policy.minimum_n}, and complementary cells where needed, are withheld. Dashed slots have no numeric height.`;
@@ -259,6 +353,8 @@ function renderLearning() {
     const gap = metric("below_agree_after", { skill }, cohort);
     const gain = metric("agreement_gain", { skill }, cohort);
     const panel = html("article", "", "panel detail-card");
+    panel.id = `outcome-${skill}`;
+    panel.tabIndex = -1;
     const header = html("div", "", "detail-header");
     header.append(html("h2", label), html("span", Data.visibleShare(after) ? `${integer.format(after.n)} complete pairs` : unavailable(after)));
     const stats = html("dl", "", "detail-stats");
@@ -369,8 +465,10 @@ function renderFindings() {
   const container = $("#findings");
   container.replaceChildren();
   if (!report.findings.length) container.append(empty("No recommendations supplied yet", "This report contains no written findings. Review learning outcomes and participant themes to develop next steps."));
-  for (const finding of report.findings) {
+  for (const [index, finding] of report.findings.entries()) {
     const panel = html("article", "", "finding");
+    panel.id = `finding-${index}`;
+    panel.tabIndex = -1;
     if (!Data.safeFinding(finding, report.metrics)) {
       panel.append(html("h3", "Finding unavailable"), html("p", "Supporting evidence is unavailable or withheld. The observation and suggested action are not displayed."));
       container.append(panel);
@@ -434,6 +532,33 @@ function renderThemes() {
   }
 }
 
+function renderThemePreview() {
+  const container = $("#theme-preview");
+  container.replaceChildren();
+  const questions = report.theme_data.status === "available" ? report.theme_data.questions : [];
+  let shown = 0;
+  for (const question of questions) {
+    for (const theme of question.themes) {
+      if (shown >= 3) break;
+      const entry = theme.prevalence.map(refMetric).find(Data.visibleShare);
+      if (!entry) continue;
+      const row = html("div", "", "preview-theme");
+      const label = html("div", "", "theme-label");
+      label.append(html("strong", theme.label), html("span", shareText(entry), "number"));
+      const track = html("div", "", "theme-track");
+      track.setAttribute("aria-hidden", "true");
+      const fill = html("span");
+      fill.style.width = `${entry.value * 100}%`;
+      track.append(fill);
+      row.append(label, html("p", `${question.label} · ${baseText(entry)}`), track);
+      container.append(row);
+      shown++;
+    }
+  }
+  if (!shown) container.append(empty("No released themes", "Coded comment themes are not available in this report."));
+  else container.append(html("p", "Themes may overlap. Shares use each theme’s valid-answer base.", "chart-footnote"));
+}
+
 function renderMethods() {
   const quality = $("#quality-summary");
   quality.replaceChildren();
@@ -461,32 +586,44 @@ function renderMethods() {
 }
 
 function render(nextReport) {
+  const previous = report;
+  const liveMain = $("#main-content");
+  const stagedMain = liveMain.cloneNode(true);
   report = nextReport;
-  renderSummary();
-  renderObjectives();
-  renderFocus();
-  $("#movement").replaceChildren(...skills.map(([skill, label]) => movementRow(skill, label, "all_responses")));
-  renderMonths();
-  $("#learning-cohort").value = "all_responses";
-  $("#learning-cohort option[value=excluding_flagged]").disabled = !report.metrics.some((entry) => entry.dimensions.cohort === "excluding_flagged");
-  renderLearning();
-  renderCommunity();
-  renderCoverage();
-  renderFindings();
-  renderThemes();
-  renderMethods();
-  const generated = new Date(report.generated_at);
-  $("#report-date").replaceChildren();
-  if (Number.isFinite(generated.getTime())) {
+  renderRoot = stagedMain;
+  try {
+    renderSummary();
+    renderObjectives();
+    renderFocus();
+    $("#movement").replaceChildren(...skills.map(([skill, label]) => movementRow(skill, label, "all_responses")));
+    renderMonths();
+    $("#learning-cohort").value = "all_responses";
+    $("#learning-cohort option[value=excluding_flagged]").disabled = !report.metrics.some((entry) => entry.dimensions.cohort === "excluding_flagged");
+    renderLearning();
+    renderCommunity();
+    renderCoverage();
+    renderFindings();
+    renderThemes();
+    renderThemePreview();
+    renderMethods();
+    const generated = new Date(report.generated_at);
     const time = html("time", dateFormat.format(generated));
     time.dateTime = generated.toISOString();
-    $("#report-date").append(html("span", "Report generated"), time);
+    $("#report-date").replaceChildren(html("span", "Report generated"), time);
+    $("#draft-banner").hidden = report.data_kind !== "synthetic";
+    $("#dashboard").hidden = false;
+    $("#initial-state").hidden = true;
+    $("#load-status").textContent = "";
+  } catch (error) {
+    report = previous;
+    throw error;
+  } finally {
+    renderRoot = document;
   }
-  $("#draft-banner").hidden = report.data_kind !== "synthetic";
-  $("#dashboard").hidden = false;
-  $("#initial-state").hidden = true;
+  liveMain.replaceWith(stagedMain);
+  bindMainControls();
   $("#print-report").disabled = false;
-  navigate();
+  navigate(false, true);
 }
 
 async function load(readReport) {
@@ -498,7 +635,9 @@ async function load(readReport) {
     const nextReport = Data.validate(await readReport());
     if (current !== requestNumber) return;
     render(nextReport);
-    status.textContent = "";
+    $("#load-status").textContent = "";
+    const total = Data.find(report.metrics, "usable_responses");
+    announce(`Report opened.${Data.visibleCount(total) ? ` ${countText(total)} survey responses.` : ""}${report.data_kind === "synthetic" ? " Fictional sample data." : ""}`);
   } catch {
     if (current !== requestNumber) return;
     status.classList.add("error");
@@ -520,9 +659,21 @@ $(".skip-link").addEventListener("click", (event) => {
   $("#main-content").focus();
   $("#main-content").scrollIntoView();
 });
-$("#show-intervals").addEventListener("change", () => { if (report) renderObjectives(); });
-$("#learning-cohort").addEventListener("change", () => { if (report) renderLearning(); });
-for (const id of ["#community-group", "#community-skill"]) $(id).addEventListener("change", () => { if (report) renderCommunity(); });
+function bindMainControls() {
+  $("#show-intervals").addEventListener("change", () => { if (report) setRoute({ intervals: $("#show-intervals").checked ? "" : "off" }); });
+  for (const button of document.querySelectorAll("[data-chart]")) button.addEventListener("click", () => {
+    if (!report || button.getAttribute("aria-pressed") === "true") return;
+    setRoute({ chart: button.dataset.chart === "agreement" ? "" : "movement" });
+    animateResult(button.dataset.chart === "agreement" ? $("#agreement-chart") : $("#rating-chart"));
+  });
+  $("#learning-cohort").addEventListener("change", () => { if (report) setRoute({ cohort: $("#learning-cohort").value === "all_responses" ? "" : $("#learning-cohort").value }); });
+  for (const id of ["#community-group", "#community-skill"]) $(id).addEventListener("change", () => {
+    if (report) setRoute({ group: $("#community-group").value, skill: $("#community-skill").value });
+  });
+}
+bindMainControls();
+$("#section-picker").addEventListener("change", () => { location.hash = rememberedRoutes[$("#section-picker").value] || `#${$("#section-picker").value}`; });
+window.addEventListener("resize", positionIndicator);
 window.addEventListener("hashchange", () => navigate(true));
 navigate();
 if (location.protocol === "file:") {

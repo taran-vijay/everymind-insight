@@ -4,6 +4,18 @@
   const count = (value) => Number.isSafeInteger(value) && value >= 0;
   const share = (value) => Number.isFinite(value) && value >= 0 && value <= 1;
   const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+  const digest = (value) => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
+  function awareDateTime(value) {
+    if (typeof value !== "string") return false;
+    const parts = /^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.\d+)?([Zz]|[+-](\d{2}):(\d{2}))$/.exec(value);
+    if (!parts) return false;
+    const [year, month, day, hour, minute, second] = parts.slice(1, 7).map(Number);
+    const monthDays = [31, year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    return year > 0 && month >= 1 && month <= 12 && day >= 1 && day <= monthDays[month - 1]
+      && hour < 24 && minute < 60 && second < 60
+      && (parts[8] === undefined || (Number(parts[8]) < 24 && Number(parts[9]) < 60))
+      && Number.isFinite(Date.parse(value));
+  }
   const key = (id, dimensions) => JSON.stringify([id, Object.entries(dimensions).sort(([a], [b]) => a.localeCompare(b))]);
   const find = (metrics, id, dimensions = {}) => metrics.find((metric) => key(metric.metric_id, metric.dimensions) === key(id, dimensions));
   const released = (metric) => metric?.suppressed === false && Number.isFinite(metric.value) && count(metric.n);
@@ -16,8 +28,10 @@
   }
   function validate(report) {
     if (!object(report) || report.schema_version !== "1.0.0" || !Array.isArray(report.metrics)
+      || !awareDateTime(report.generated_at) || !digest(report.input_hash)
       || !["survey", "synthetic"].includes(report.data_kind)
       || !Array.isArray(report.findings) || !object(report.theme_data) || !Array.isArray(report.theme_data.questions)
+      || !["available", "unavailable"].includes(report.theme_data.status)
       || !object(report.quality_report) || !Array.isArray(report.quality_report.metrics)
       || !Array.isArray(report.quality_report.notes) || !Array.isArray(report.caveats)
       || !report.caveats.every((caveat) => object(caveat) && ["id", "label", "explanation"].every((field) => typeof caveat[field] === "string"))
@@ -33,6 +47,14 @@
         || Object.values(metric.dimensions).some((value) => typeof value !== "string")
         || typeof metric.suppressed !== "boolean" || typeof metric.definition !== "string"
         || !["count", "proportion", "percentage_point", "ordinal_point", "ratio", "p_value", "statistic", "rank"].includes(metric.unit)) throw new Error("Invalid metric ledger.");
+      const provenance = metric.provenance;
+      if (!object(provenance) || !digest(provenance.input_hash) || !digest(provenance.config_hash)
+        || provenance.input_hash !== report.input_hash
+        || typeof provenance.method !== "string" || typeof provenance.population !== "string"
+        || (provenance.parameters !== undefined && (!object(provenance.parameters)
+          || Object.values(provenance.parameters).some((value) => !["string", "boolean"].includes(typeof value) && !Number.isFinite(value))))) {
+        throw new Error("Invalid metric provenance or mismatched input fingerprint.");
+      }
       const id = key(metric.metric_id, metric.dimensions);
       if (seen.has(id)) throw new Error("Duplicate metric in the report.");
       seen.add(id);
@@ -58,6 +80,7 @@
       }
     }
     const reference = (ref) => object(ref) && typeof ref.metric_id === "string" && object(ref.dimensions)
+      && Object.values(ref.dimensions).every((value) => typeof value === "string")
       && seen.has(key(ref.metric_id, ref.dimensions));
     const caveatIds = new Set(report.caveats.map((caveat) => caveat?.id));
     for (const finding of report.findings) {
@@ -70,6 +93,7 @@
     }
     for (const question of report.theme_data.questions) {
       if (!object(question) || typeof question.label !== "string" || !reference(question.answered)
+        || (question.diagnostics !== undefined && (!Array.isArray(question.diagnostics) || !question.diagnostics.every(reference)))
         || !Array.isArray(question.themes) || question.themes.some((theme) => !object(theme)
           || typeof theme.label !== "string" || !["codebook", "embedding"].includes(theme.method)
           || !Array.isArray(theme.prevalence) || !theme.prevalence.every(reference))) {

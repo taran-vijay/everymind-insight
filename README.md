@@ -95,6 +95,8 @@ Open [the local dashboard](http://127.0.0.1:8000/). When an aggregate report bun
 
 The dashboard has five sections: Overview, Learning outcomes, Community reach, Participant feedback, and Data & methods. Use **Open report** to read a different aggregate report JSON locally in the browser. The synthetic-data banner stays visible for sample reports. Invalid files leave the current report in place.
 
+The overview switches between **Agreement** and **Rating movement**, with optional confidence intervals. Objective links open the selected outcome; cohort and community filters are preserved in the URL and support Back and reload. Short chart and section transitions respect reduced motion.
+
 Learning outcomes includes an **Exclude flagged responses** cohort selector. Community comparisons appear only when the bundle contains the selected subgroup metrics; the sample does not include those comparisons. Feedback displays report-supplied findings, actions, and coded themes. Findings with unavailable or suppressed supporting metrics are withheld. **Print view** prints the section currently open.
 
 The frontend uses native HTML, CSS, JavaScript, and platform fonts. It requires no frontend build step or external font service. Opening `dashboard/index.html` directly also works: select a report with **Open report**.
