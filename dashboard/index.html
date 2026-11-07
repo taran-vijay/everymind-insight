@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#101a14">
   <title>EveryMind · Training insights</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles.css">
@@ -16,7 +16,7 @@
   <div class="workspace">
     <header class="site-header">
       <div class="global-bar">
-        <a class="brand" href="#overview" aria-label="EveryMind training insights home">EveryMind</a>
+        <a class="brand" href="#overview" aria-label="EveryMind training insights home"><svg class="brand-mark" aria-hidden="true" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13"/><path d="M3 16h26M16 3c-9 7-9 19 0 26M16 3c9 7 9 19 0 26M6 8h20M6 24h20"/></svg><span>EveryMind</span></a>
         <nav aria-label="Report sections">
           <span id="nav-indicator" aria-hidden="true"></span>
           <a href="#overview" data-view="overview">Overview</a>
@@ -31,53 +31,53 @@
           <input class="file-input" type="file" id="report-picker" accept=".json,application/json">
         </div>
       </div>
-      <label class="section-select" for="section-picker">Report section<select id="section-picker"><option value="overview">Overview</option><option value="learning">Learning outcomes</option><option value="community">Community reach</option><option value="feedback">Participant feedback</option><option value="methods">Data &amp; methods</option></select></label>
+      <label class="section-select" for="section-picker">Report section<select id="section-picker"><option value="overview">Overview</option><option value="learning">Outcomes</option><option value="community">Communities</option><option value="feedback">Feedback</option><option value="methods">Methods</option></select></label>
     </header>
     <main id="main-content" tabindex="-1" data-view="overview">
-      <div class="page-heading"><div><p class="eyebrow">Understanding 988</p><h1 id="page-title">Training insights</h1><p id="page-description">Participant learning, remaining gaps, and what to review next.</p></div><p class="report-date" id="report-date"></p></div>
-      <div class="report-context"><div id="draft-banner" class="sample-banner" hidden><span class="sample-tag">Sample report</span><p>Fictional data. Open your survey report for findings.</p></div><dl id="report-summary" class="summary-strip"></dl></div>
+      <div class="page-heading"><div class="page-heading-copy"><h1 id="page-title">Training insights</h1></div><p class="report-date" id="report-date"></p></div>
+      <div class="report-context"><div id="draft-banner" class="sample-banner" hidden><span class="sample-tag">Fictional sample data</span></div><dl id="report-summary" class="summary-strip"></dl></div>
       <p id="load-status" class="load-status" role="status" aria-live="polite">Opening the report…</p>
-      <noscript><div class="empty-state">Enable JavaScript to open a report and explore its results.</div></noscript>
-      <div id="initial-state" class="empty-state" hidden><h2>Your next report starts here.</h2><p>Choose an aggregate report JSON using “Open report” above. Survey responses stay on your computer.</p></div>
+      <noscript><div class="empty-state">Enable JavaScript to open a report.</div></noscript>
+      <div id="initial-state" class="empty-state" hidden><h2>Open a report</h2><p>Select an aggregate report JSON file.</p></div>
       <div id="dashboard" hidden>
         <section id="view-overview" class="view" aria-label="Overview">
           <div class="overview-story">
             <section class="panel learning-panel" aria-labelledby="objectives-heading">
-              <div class="section-heading"><div><h2 id="objectives-heading">Confidence before and after</h2><p id="chart-description">Participants selecting Agree or Strongly agree.</p></div></div>
+              <div class="section-heading"><div><h2 id="objectives-heading">Self-reported ability</h2><p id="chart-description">Agree or Strongly agree</p></div></div>
               <div class="chart-toolbar"><div class="segmented-control" role="group" aria-label="Chart measure"><button type="button" data-chart="agreement" aria-pressed="true">Agreement</button><button type="button" data-chart="movement" aria-pressed="false">Rating movement</button></div><label class="check-control"><input type="checkbox" id="show-intervals" checked>Intervals</label></div>
               <div id="agreement-chart">
               <div class="legend"><span><i class="legend-before"></i>Recalled before</span><span><i class="legend-after"></i>Current</span><span id="interval-explanation">Whiskers show confidence intervals.</span></div>
               <div class="comparison-head" aria-hidden="true"><span>Learning objective</span><span>Share who agree</span><span>Current</span><span>Change</span></div>
               <div id="objectives"></div>
               </div>
-              <div id="rating-chart" hidden><div id="movement"></div><div class="legend movement-legend"><span><i class="legend-up"></i>Higher</span><span><i class="legend-same"></i>Unchanged</span><span><i class="legend-down"></i>Lower</span></div></div>
-              <div class="chart-afterword"><p class="chart-footnote">“Before” ratings were recalled after training. Changes describe self-reports; they do not establish a training effect.</p><a class="text-link" href="#learning">Explore outcomes <span aria-hidden="true">›</span></a></div>
+              <div id="rating-chart" hidden><div id="movement"></div></div>
+              <div class="chart-afterword"><p class="chart-footnote">“Before” ratings were recalled after training. Changes do not establish a training effect.</p><a class="text-link" href="#learning">View outcomes <span aria-hidden="true">›</span></a></div>
             </section>
             <aside id="focus-panel" class="focus-panel" aria-labelledby="focus-heading"></aside>
           </div>
-          <a class="feedback-bridge" href="#feedback"><div><span class="bridge-label">Participant feedback</span><p>Read the themes behind the ratings.</p></div><span class="bridge-action">Explore feedback <span aria-hidden="true">→</span></span></a>
+
           <div class="secondary-grid supporting-charts">
-            <section class="panel" aria-labelledby="overview-themes-heading"><div class="section-heading"><div><h2 id="overview-themes-heading">In participants’ words</h2><p>Coded themes, without individual comments.</p></div></div><div id="theme-preview"></div></section>
-            <section class="panel" aria-labelledby="months-heading"><div class="section-heading"><div><h2 id="months-heading">Participation over time</h2><p>Survey responses by training month.</p></div></div><div id="training-months" class="month-chart" tabindex="0" role="region" aria-label="Training-month response counts"></div><p class="chart-footnote" id="month-note"></p></section>
+            <section class="panel" aria-labelledby="overview-themes-heading"><div class="section-heading"><div><h2 id="overview-themes-heading">Feedback themes</h2></div></div><div id="theme-preview"></div></section>
+            <section class="panel" aria-labelledby="months-heading"><div class="section-heading"><div><h2 id="months-heading">Responses by month</h2></div></div><div id="training-months" class="month-chart" tabindex="0" role="region" aria-label="Training-month response counts"></div><p class="chart-footnote" id="month-note"></p></section>
           </div>
-          <div class="reading-note"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></svg><p>A little context matters. These are retrospective, self-reported ratings from survey respondents.</p><a class="text-link" href="#methods">Read the limitations <span aria-hidden="true">›</span></a></div>
+
         </section>
         <section id="view-learning" class="view" aria-label="Learning outcomes" hidden>
-          <div class="view-toolbar"><p>Compare agreement, remaining gaps, and individual rating changes.</p><label>Response cohort<select id="learning-cohort"><option value="all_responses">All responses</option><option value="excluding_flagged">Exclude flagged responses</option></select></label></div>
+          <div class="view-toolbar"><label>Response cohort<select id="learning-cohort"><option value="all_responses">All responses</option><option value="excluding_flagged">Exclude flagged responses</option></select></label></div>
           <div id="learning-details" class="detail-list"></div>
         </section>
         <section id="view-community" class="view" aria-label="Community reach" hidden>
-          <section class="panel"><div class="section-heading"><div><h2>Learning across communities</h2><p>Descriptive comparisons among complete pairs. Groups may differ in who attended.</p></div></div><div class="filter-bar"><label>Compare by<select id="community-group"><option value="county">County</option><option value="role">Participant role</option><option value="language">Language</option><option value="training_month">Training month</option></select></label><label>Learning objective<select id="community-skill"><option value="identify_crises">Identify crises</option><option value="describe_988">Describe 988</option><option value="know_when_to_use_988">Know when to use 988</option></select></label></div><div id="community-results"></div><p class="chart-footnote">Descriptive shares are unadjusted. Role groups can overlap when participants select multiple roles. Suppressed values are never shown or reconstructed.</p></section>
-          <section class="coverage-section" aria-labelledby="calling-heading"><h2 id="calling-heading">Who answered the calling question?</h2><p>The question appears in some training sessions. Coverage is separate from willingness to call 988.</p><div id="calling-coverage"></div></section>
+          <section class="panel"><div class="section-heading"><div><h2>Group comparison</h2></div></div><div class="filter-bar"><label>Compare by<select id="community-group"><option value="county">County</option><option value="role">Participant role</option><option value="language">Language</option><option value="training_month">Training month</option></select></label><label>Learning objective<select id="community-skill"><option value="identify_crises">Identify crises</option><option value="describe_988">Describe 988</option><option value="know_when_to_use_988">Know when to use 988</option></select></label></div><div id="community-results"></div><p class="chart-footnote">Unadjusted comparisons. Participant roles may overlap. Withheld values protect small groups.</p></section>
+          <section class="coverage-section" aria-labelledby="calling-heading"><h2 id="calling-heading">Calling-question coverage</h2><p>Share answering the calling-intent question.</p><div id="calling-coverage"></div></section>
         </section>
         <section id="view-feedback" class="view" aria-label="Participant feedback" hidden>
-          <section aria-labelledby="recommendations-heading"><div class="section-heading"><div><h2 id="recommendations-heading">From feedback to next steps</h2><p>Findings and suggested actions supplied by the report, with their supporting evidence.</p></div></div><div id="findings" class="finding-list"></div></section>
-          <section class="feedback-section" aria-labelledby="themes-heading"><div class="section-heading"><div><h2 id="themes-heading">What participants shared</h2><p>Coded themes from open-ended responses. No individual comments are displayed.</p></div></div><div id="themes" class="secondary-grid"></div></section>
+          <section aria-labelledby="recommendations-heading"><div class="section-heading"><div><h2 id="recommendations-heading">Recommendations</h2></div></div><div id="findings" class="finding-list"></div></section>
+          <section class="feedback-section" aria-labelledby="themes-heading"><div class="section-heading"><div><h2 id="themes-heading">Feedback themes</h2></div></div><div id="themes" class="secondary-grid"></div></section>
         </section>
         <section id="view-methods" class="view" aria-label="Data and methods" hidden>
-          <section class="panel"><div class="section-heading"><div><h2>A report you can trace</h2><p>Quality checks and context for interpreting these results.</p></div></div><dl id="quality-summary" class="quality-summary"></dl><div id="quality-notes"></div></section>
-          <section class="methods-section" aria-labelledby="limitations-heading"><h2 id="limitations-heading">How to read the results</h2><div id="caveats" class="caveat-grid"></div></section>
-          <section class="panel methods-section"><h2>Metric definitions</h2><p>Definitions supplied by this report.</p><div id="definitions" class="definitions"></div></section>
+          <section class="panel"><div class="section-heading"><div><h2>Data quality</h2></div></div><dl id="quality-summary" class="quality-summary"></dl><div id="quality-notes"></div></section>
+          <section class="methods-section" aria-labelledby="limitations-heading"><h2 id="limitations-heading">Limitations</h2><div id="caveats" class="caveat-grid"></div></section>
+          <section class="panel methods-section"><h2>Metric definitions</h2><div id="definitions" class="definitions"></div></section>
           <p id="provenance" class="provenance"></p>
         </section>
       </div>

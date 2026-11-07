@@ -5,22 +5,28 @@ and decide what to review with trainers. This is an analysis workspace.
 
 ## Direction
 
-The compact mockup is the visual reference: one horizontal navigation bar, a modest
-page heading, a dominant comparison chart, and a narrower interpretation column.
-The editorial alternative informs only the wordmark and warmer palette. Generated
-mockup numbers, quotes, and extra charts are never a source of report data.
+The user's Pacer Intelligence reference sets the visual direction: deep forest
+surfaces, light sans-serif headings, compact monospace metadata, and fine square
+panel borders. A spacious heading leads into the real comparison chart and a
+narrower interpretation column. The chart carries the visual emphasis of this
+analysis workspace. Reference-site claims and assets are not report content.
 
-Use white, pine green, and warm gray. Platform sans-serif carries the interface;
-Georgia gives the wordmark a quiet editorial character. Headings are 22–36px,
-body copy 14–16px, and chart metadata at least 12px. Use a single 6–8px corner system,
-hairline dividers, and consistent content edges. Avoid oversized marketing headings,
-repeated KPI cards, decorative status dots, and nested chart containers.
+Use #101a14 as the page base, stepped forest panels, off-white text, and restrained
+mint accents. Platform sans-serif is a license-free substitute for the reference's
+display face; locally bundled Chivo Mono sets short technical labels and response bases.
+Keep chart metadata at least 12px and use fluid display type, hairline dividers,
+0–4px corners, and consistent content edges. Summary figures come from the report.
+Keep text contrast, direct labels, and the synthetic-data notice legible on dark
+surfaces. Printed reports use light surfaces and dark text.
 
 ## Composition and interaction
 
 - The overview gives the chart most of the width and places the remaining gap beside it.
 - Agreement and individual rating movement share one chart workspace.
 - Keep agreement on a fixed 0–100% scale. Both series have exact values and response bases.
+- The overview uses paired bars for agreement and stacked bars for rating movement. Each outcome card pairs a 2×2 metric grid on the left with a larger doughnut on the right, showing higher/unchanged/lower ratings with direct labels and response counts.
+- Monthly response counts use bars. Withheld months have dashed slots without numeric height, and released zero counts stay at zero.
+- Key numeric values have a quiet 1px frame, separated from their labels and calculation notes.
 - Confidence intervals are optional, with their actual level shown. Detailed outcomes give numeric ranges.
 - Objective and finding links land on the selected evidence. Cohort and community filters live in the URL; Back and reload restore them.
 - Filter changes preserve control focus and announce the updated context.
@@ -28,7 +34,7 @@ repeated KPI cards, decorative status dots, and nested chart containers.
 
 ## Motion
 
-Chart bars enter once when the comparison first opens. Labels remain stable.
+Chart values and labels remain stable while the comparison is read.
 Navigation uses a moving underline and a short, interruptible section transition.
 Filter updates fade only the result, leaving controls immediate. Buttons respond
 on press; internal links reveal a small directional cue. No repeating animation,
@@ -50,6 +56,8 @@ report in a detached DOM tree so a rendering failure preserves the current repor
 
 ## References
 
+- [Pacer Intelligence](https://pacer-intelligence.com/): the user's visual reference for the forest palette, technical typography, and panel system.
+- [Chivo Mono](https://github.com/google/fonts/tree/main/ofl/chivomono): bundled variable font, with its SIL Open Font License in `assets/chivo-mono-OFL.txt`.
 - [Apple chart guidance](https://developer.apple.com/design/human-interface-guidelines/charts): legible evidence, direct descriptions, accessible alternatives.
 - [Vercel Web Interface Guidelines](https://github.com/vercel-labs/web-interface-guidelines): semantics, focus, state in URLs, motion preferences, and resilient layouts.
 - [Emil Kowalski](https://github.com/emilkowalski/skills): purposeful motion and immediate interaction feedback.

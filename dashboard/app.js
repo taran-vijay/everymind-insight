@@ -7,17 +7,18 @@ const skills = [
   ["know_when_to_use_988", "Know when to use 988"],
 ];
 const views = {
-  overview: ["Training insights", "Participant learning, remaining gaps, and what to review next."],
-  learning: ["Learning outcomes", "Agreement and individual rating changes, with the evidence behind each estimate."],
-  community: ["Community reach", "Learning across participant groups, and where the evidence is limited."],
-  feedback: ["Participant feedback", "Report findings and coded themes to inform the next training."],
-  methods: ["Data & methods", "Quality checks, definitions, and limitations for reading this report."],
+  overview: "Training insights",
+  learning: "Learning outcomes",
+  community: "Community reach",
+  feedback: "Participant feedback",
+  methods: "Data & methods",
 };
 const integer = new Intl.NumberFormat("en-US");
 const percent = new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 });
 const decimal = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 const monthFormat = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+const motionEasing = getComputedStyle(document.documentElement).getPropertyValue("--ease-out").trim() || "ease-out";
 let renderRoot = document;
 const $ = (selector) => renderRoot.querySelector(selector);
 let report = null;
@@ -45,7 +46,7 @@ function setRoute(values) {
 function animateResult(node) {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   for (const animation of node.getAnimations()) animation.cancel();
-  node.animate([{ opacity: .72 }, { opacity: 1 }], { duration: 180, easing: "ease-out" });
+  node.animate([{ opacity: .72 }, { opacity: 1 }], { duration: 180, easing: motionEasing });
 }
 function announce(text) { $("#interaction-status").textContent = text; }
 function positionIndicator() {
@@ -76,7 +77,8 @@ function link(text, destination) {
 }
 function empty(title, text) {
   const node = html("div", "", "empty-state");
-  node.append(html("h3", title), html("p", text));
+  node.append(html("h3", title));
+  if (text) node.append(html("p", text));
   return node;
 }
 function metric(id, dimensions = {}, cohort = "all_responses") {
@@ -113,7 +115,9 @@ function metricText(entry) {
 }
 function stat(label, value, note) {
   const node = html("div");
-  node.append(html("dt", label), html("dd", value, "stat-value"));
+  const number = html("dd", "", "stat-value");
+  number.append(html("span", value, "metric-number"));
+  node.append(html("dt", label), number);
   if (note) node.append(html("div", note, "stat-note"));
   return node;
 }
@@ -139,9 +143,8 @@ function navigate(focus = false, initial = false) {
     if (node.dataset.view === view) node.setAttribute("aria-current", "page");
     else node.removeAttribute("aria-current");
   }
-  $("#page-title").textContent = views[view][0];
-  $("#page-description").textContent = views[view][1];
-  document.title = `${views[view][0]} · EveryMind`;
+  $("#page-title").textContent = views[view];
+  document.title = `${views[view]} · EveryMind`;
   if (report) {
     if (view === "overview") {
       const movement = params.get("chart") === "movement";
@@ -150,7 +153,7 @@ function navigate(focus = false, initial = false) {
       $("#show-intervals").checked = params.get("intervals") !== "off";
       $("#show-intervals").closest("label").hidden = movement;
       for (const button of document.querySelectorAll("[data-chart]")) button.setAttribute("aria-pressed", String(button.dataset.chart === (movement ? "movement" : "agreement")));
-      $("#chart-description").textContent = movement ? "Individual changes among participants with both ratings." : "Participants selecting Agree or Strongly agree.";
+      $("#chart-description").textContent = movement ? "Change in paired ratings" : "Agree or Strongly agree";
       renderObjectives(changed || initial);
     } else if (view === "learning") {
       const filtered = params.get("cohort") === "excluding_flagged" && !$("#learning-cohort option[value=excluding_flagged]").disabled;
@@ -177,7 +180,7 @@ function navigate(focus = false, initial = false) {
   if (focus) {
     const section = $(`#view-${view}`);
     if (changed) {
-      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) section.animate([{ opacity: 0, transform: "translateY(5px)" }, { opacity: 1, transform: "none" }], { duration: 220, easing: "cubic-bezier(.22,1,.36,1)" });
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) section.animate([{ opacity: 0, transform: "translateY(5px)" }, { opacity: 1, transform: "none" }], { duration: 220, easing: motionEasing });
     } else if (view === "learning" || view === "community") animateResult($(view === "learning" ? "#learning-details" : "#community-results"));
     if (view === "learning") announce(`Learning outcomes updated. ${$("#learning-cohort").selectedOptions[0].textContent}.`);
     if (view === "community") announce(`Community comparison updated. ${$("#community-skill").selectedOptions[0].textContent}, by ${$("#community-group").selectedOptions[0].textContent.toLowerCase()}.`);
@@ -222,7 +225,7 @@ function renderObjectives(animate = false) {
   container.replaceChildren();
   const intervals = skills.flatMap(([skill]) => [metric("agree_before", { skill }), metric("agree_after", { skill })]).map(Data.interval).filter(Boolean);
   const levels = [...new Set(intervals.map((ci) => percent.format(ci.level)))];
-  $("#interval-explanation").textContent = levels.length === 1 ? `Whiskers: ${levels[0]} confidence intervals` : "Whiskers: confidence intervals; see outcomes for levels";
+  $("#interval-explanation").textContent = levels.length === 1 ? `${levels[0]} confidence intervals` : "Confidence levels in Outcomes";
   $("#interval-explanation").hidden = !$("#show-intervals").checked || !intervals.length;
   for (const [index, [skill, label]] of skills.entries()) {
     const before = metric("agree_before", { skill });
@@ -233,8 +236,7 @@ function renderObjectives(animate = false) {
     const name = html("div", "", "objective-name");
     const objectiveLink = link(label, destination("learning", { skill }));
     objectiveLink.className = "objective-link";
-    name.append(objectiveLink, html("small", `${shareText(before)} recalled before`),
-      html("small", Data.visibleShare(after) ? `${integer.format(after.n)} paired responses` : unavailable(after)));
+    name.append(objectiveLink, html("small", `${shareText(before)} before · ${baseText(after)}`));
     const chart = html("div", "", "comparison-plot");
     chart.append(comparisonPlot(before, after, $("#show-intervals").checked));
     const current = html("div", shareText(after), "metric-value");
@@ -255,61 +257,84 @@ function renderObjectives(animate = false) {
 function renderFocus() {
   const panel = $("#focus-panel");
   const introduction = html("div", "", "focus-intro");
-  const heading = html("h2", "A closer look");
+  const heading = html("h2", "Remaining gap");
   heading.id = "focus-heading";
   introduction.append(heading);
   panel.replaceChildren(introduction);
   const gaps = skills.map(([skill, label]) => ({ skill, label, entry: metric("below_agree_after", { skill }) }));
   if (!gaps.every(({ entry }) => Data.visibleShare(entry))) {
-    panel.append(html("p", "A complete, released set of gap estimates is needed to compare objectives.", "focus-description"), link("Explore the available outcomes", "#learning"));
+    panel.append(html("p", "Some gap estimates are unavailable or withheld.", "focus-description"), link("View outcomes", "#learning"));
     return;
   }
   gaps.sort((a, b) => b.entry.value - a.entry.value);
   const largest = gaps[0];
   const tied = gaps.filter(({ entry }) => Math.abs(entry.value - largest.entry.value) < 1e-10).length > 1;
+  heading.textContent = tied ? "Joint-largest gap" : "Largest remaining gap";
   const evidence = html("div", "", "focus-evidence");
   evidence.append(html("div", percent.format(largest.entry.value), "focus-stat"));
   const description = html("p", "", "focus-description");
-  description.append(html("span", "rated their ability to "), html("span", largest.label.toLowerCase(), "focus-skill"), html("span", ` below Agree after training. ${tied ? "Joint-largest" : "Largest"} observed gap; ${baseText(largest.entry)}.`));
+  description.append(html("span", "rated their ability to "), html("span", largest.label.toLowerCase(), "focus-skill"), html("span", ` below Agree after training (${baseText(largest.entry)}).`));
   evidence.append(description);
   panel.append(evidence);
   const finding = report.findings.find((entry) => Data.safeFinding(entry, report.metrics)
     && entry.metric_refs.some((ref) => ref.metric_id === "below_agree_after" && ref.dimensions.skill === largest.skill
       && ref.dimensions.cohort === "all_responses"));
   const action = html("div", "", "focus-action");
-  action.append(html("h3", finding ? "Suggested next step" : "A starting point for review"),
-    html("p", finding ? finding.action : "Review this objective alongside participant feedback before deciding how to adapt the training."));
+  action.append(html("h3", finding ? "Recommendation" : "Review"),
+    html("p", finding ? finding.action : "Review participant feedback for this objective."));
   if (finding) {
     action.append(html("span", `${finding.confidence[0].toUpperCase() + finding.confidence.slice(1)} confidence`, "confidence-tag"));
-    action.append(link("Read the evidence →", destination("feedback", { finding: String(report.findings.indexOf(finding)) })));
-  } else action.append(link("Read participant feedback →", "#feedback"));
+    action.append(link("View evidence →", destination("feedback", { finding: String(report.findings.indexOf(finding)) })));
+  } else action.append(link("View feedback →", "#feedback"));
   panel.append(action);
 }
 
-function movementRow(skill, label, cohort) {
+function movementRow(skill, label, cohort, asBars = false) {
   const row = html("div", "", "movement-row");
   const entries = Data.movement(report.metrics, skill, cohort);
   const header = html("div", "", "movement-label");
-  header.append(html("h3", label), html("span", entries ? `n=${integer.format(entries[0].n)}` : ""));
+  header.append(html("h3", label));
   row.append(header);
   if (!entries) {
     const anySuppressed = ["up", "same", "down"].some((direction) => metric(`movement_${direction}`, { skill }, cohort)?.suppressed);
     row.append(html("p", anySuppressed ? "Movement breakdown withheld" : "Movement breakdown unavailable", "unavailable"));
     return row;
   }
-  const bar = html("div", "", "stacked-bar");
-  bar.setAttribute("aria-hidden", "true");
+  const distribution = html("div", "", asBars ? "movement-bar-distribution" : "movement-distribution");
+  const graphic = asBars ? html("div", "", "stacked-bar")
+    : svg("svg", { viewBox: "0 0 104 104" }, "movement-ring");
+  graphic.setAttribute("aria-hidden", "true");
+  if (asBars) header.append(html("span", `n=${integer.format(entries[0].n)}`));
+  else graphic.append(svg("circle", { cx: 52, cy: 52, r: 42 }, "ring-track"));
   const values = html("div", "", "movement-values");
+  let offset = 0;
   entries.forEach((entry, index) => {
     const direction = ["up", "same", "down"][index];
-    const segment = html("span", "", direction);
-    segment.style.flex = `${entry.value} 1 0%`;
-    bar.append(segment);
-    const text = html("span", `${percent.format(entry.value)} ${["higher", "same", "lower"][index]}`);
+    if (asBars) {
+      const segment = html("span", "", direction);
+      segment.style.flex = `${entry.value} 1 0%`;
+      graphic.append(segment);
+    } else graphic.append(svg("circle", { cx: 52, cy: 52, r: 42, pathLength: 100,
+      "stroke-dasharray": `${entry.value * 100} ${100 - entry.value * 100}`,
+      "stroke-dashoffset": -offset, transform: "rotate(-90 52 52)" }, `ring-segment ${direction}`));
+    offset += entry.value * 100;
+    const text = html("span", "", "movement-value");
+    const key = html("span", "", "movement-key");
+    const swatch = html("i", "", direction);
+    swatch.setAttribute("aria-hidden", "true");
+    key.append(swatch, document.createTextNode(["Higher", "Unchanged", "Lower"][index]));
+    text.append(key, html("strong", percent.format(entry.value), "number"));
     text.title = `${integer.format(entry.numerator)} of ${integer.format(entry.denominator)} responses`;
     values.append(text);
   });
-  row.append(bar, values);
+  if (!asBars) {
+    const base = svg("text", { x: 52, y: 55, "text-anchor": "middle" }, "ring-base");
+    base.textContent = `n=${integer.format(entries[0].n)}`;
+    graphic.append(base);
+  }
+  values.append(html("span", `${integer.format(entries[0].n)} paired responses`, "sr-only"));
+  distribution.append(graphic, values);
+  row.append(distribution);
   return row;
 }
 
@@ -320,7 +345,7 @@ function renderMonths() {
     && /^\d{4}-(0[1-9]|1[0-2])$/.test(entry.dimensions.group))
     .sort((a, b) => a.dimensions.group.localeCompare(b.dimensions.group));
   container.replaceChildren();
-  if (!months.length) container.append(empty("No month breakdown yet", "Training-month counts are not included in this report."));
+  if (!months.length) container.append(empty("No monthly data"));
   const maximum = Math.max(1, ...months.filter(Data.visibleCount).map((entry) => entry.value));
   for (const entry of months) {
     const visible = Data.visibleCount(entry);
@@ -340,7 +365,7 @@ function renderMonths() {
     column.append(track, label);
     container.append(column);
   }
-  $("#month-note").textContent = `Counts below ${report.suppression_policy.minimum_n}, and complementary cells where needed, are withheld. Dashed slots have no numeric height.`;
+  $("#month-note").textContent = `Counts below ${report.suppression_policy.minimum_n} and related cells are withheld.`;
 }
 
 function renderLearning() {
@@ -380,7 +405,9 @@ function renderLearning() {
     const ceiling = metric("ceiling_share", { skill }, cohort);
     list.append(html("li", `Already at the highest rating before training: ${shareText(ceiling)} (${baseText(ceiling)}).`));
     details.append(list, html("p", "Both ratings were collected after training. Recall, response-shift bias, and the lack of a control group limit interpretation. A percentage-point change is not a percent increase."));
-    panel.append(header, stats, movementRow(skill, "Individual rating changes", cohort), details);
+    const body = html("div", "", "detail-body");
+    body.append(stats, movementRow(skill, "Individual rating changes", cohort));
+    panel.append(header, body, details);
     container.append(panel);
   }
 }
@@ -426,7 +453,7 @@ function renderCommunity() {
     && entry.dimensions.skill === skill).map((entry) => entry.dimensions.group))].sort();
   container.replaceChildren();
   if (!groups.length) {
-    container.append(empty("This comparison is not in the report", "Open an aggregate report containing subgroup outcomes to compare communities. No values have been estimated from the sample."));
+    container.append(empty("No group data", "Open a report with subgroup results."));
     return;
   }
   const rows = groups.map((group) => {
@@ -464,20 +491,20 @@ function renderCoverage() {
 function renderFindings() {
   const container = $("#findings");
   container.replaceChildren();
-  if (!report.findings.length) container.append(empty("No recommendations supplied yet", "This report contains no written findings. Review learning outcomes and participant themes to develop next steps."));
+  if (!report.findings.length) container.append(empty("No recommendations in this report"));
   for (const [index, finding] of report.findings.entries()) {
     const panel = html("article", "", "finding");
     panel.id = `finding-${index}`;
     panel.tabIndex = -1;
     if (!Data.safeFinding(finding, report.metrics)) {
-      panel.append(html("h3", "Finding unavailable"), html("p", "Supporting evidence is unavailable or withheld. The observation and suggested action are not displayed."));
+      panel.append(html("h3", "Finding unavailable"), html("p", "Supporting evidence is unavailable or withheld."));
       container.append(panel);
       continue;
     }
     const header = html("div", "", "finding-top");
     header.append(html("h3", finding.observation), html("span", `${finding.confidence[0].toUpperCase() + finding.confidence.slice(1)} confidence`, "confidence-tag"));
     const action = html("div", "", "action-line");
-    action.append(html("strong", "Suggested next step"), html("span", finding.action));
+    action.append(html("strong", "Recommendation"), html("span", finding.action));
     const details = html("details");
     details.append(html("summary", "Supporting evidence & limitations"));
     const list = html("ul");
@@ -500,7 +527,7 @@ function renderThemes() {
   const container = $("#themes");
   container.replaceChildren();
   if (report.theme_data.status !== "available" || !report.theme_data.questions.length) {
-    container.append(empty("Comment themes are not available", "A report with coded comment themes will display them here. No individual comments are shown."));
+    container.append(empty("No coded themes in this report"));
     return;
   }
   for (const question of report.theme_data.questions) {
@@ -522,12 +549,12 @@ function renderThemes() {
           const fill = html("span");
           fill.style.width = `${entry.value * 100}%`;
           track.append(fill);
-          row.append(track, html("p", `${baseText(entry)}; method: ${theme.method === "embedding" ? "embedding" : "codebook"}.`, "chart-footnote"));
+          row.append(track, html("p", `${baseText(entry)} · ${theme.method === "embedding" ? "embedding" : "codebook"}`, "chart-footnote"));
         }
         panel.append(row);
       }
     }
-    panel.append(html("p", "Shares use the theme metric’s valid-answer base. Themes may overlap.", "chart-footnote"));
+    panel.append(html("p", "Shares of valid answers. Themes may overlap.", "chart-footnote"));
     container.append(panel);
   }
 }
@@ -555,8 +582,8 @@ function renderThemePreview() {
       shown++;
     }
   }
-  if (!shown) container.append(empty("No released themes", "Coded comment themes are not available in this report."));
-  else container.append(html("p", "Themes may overlap. Shares use each theme’s valid-answer base.", "chart-footnote"));
+  if (!shown) container.append(empty("No coded themes in this report"));
+  else container.append(html("p", "Shares of valid answers. Themes may overlap.", "chart-footnote"));
 }
 
 function renderMethods() {
@@ -595,7 +622,7 @@ function render(nextReport) {
     renderSummary();
     renderObjectives();
     renderFocus();
-    $("#movement").replaceChildren(...skills.map(([skill, label]) => movementRow(skill, label, "all_responses")));
+    $("#movement").replaceChildren(...skills.map(([skill, label]) => movementRow(skill, label, "all_responses", true)));
     renderMonths();
     $("#learning-cohort").value = "all_responses";
     $("#learning-cohort option[value=excluding_flagged]").disabled = !report.metrics.some((entry) => entry.dimensions.cohort === "excluding_flagged");
