@@ -1,5 +1,9 @@
 "use strict";
 
+// Anchor navigation restores the requested section, including the opening hero.
+// Prevent the browser's later scroll restoration from overriding that position.
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+
 const Data = ReportData;
 const skills = [
   ["identify_crises", "Identify crises"],
@@ -19,13 +23,114 @@ const decimal = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 const monthFormat = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 const motionEasing = getComputedStyle(document.documentElement).getPropertyValue("--ease-out").trim() || "ease-out";
+const chartGrowthEasing = getComputedStyle(document.documentElement).getPropertyValue("--ease-in").trim() || "ease-in";
 let renderRoot = document;
 const $ = (selector) => renderRoot.querySelector(selector);
 let report = null;
 let requestNumber = 0;
 const rememberedRoutes = {};
-let activeView = "";
-let activeTarget = "";
+const renderedRoutes = {};
+let ringRevealId = 0;
+const reducedChartMotion = matchMedia("(prefers-reduced-motion: reduce)");
+let chartMotionOverride = null;
+try {
+  const savedMotion = localStorage.getItem("everymind-chart-motion");
+  if (savedMotion === "on" || savedMotion === "off") chartMotionOverride = savedMotion === "on";
+} catch { /* The system preference remains the default when storage is unavailable. */ }
+const revealedCharts = new Set();
+const chartAnimations = new Map();
+const chartObserver = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
+  for (const entry of entries) {
+    if (!entry.target.isConnected) continue;
+    // Reset only after the graphic has fully left the viewport. A partial exit
+    // must not interrupt a chart someone is still reading.
+    if (!entry.isIntersecting) {
+      resetChart(entry.target);
+      continue;
+    }
+    if (entry.intersectionRatio >= .15 && entry.target.isConnected && entry.target.getClientRects().length
+      && entry.target.dataset.chartState === "pending") {
+      revealChart(entry.target);
+    }
+  }
+}, { threshold: [0, .15] }) : null;
+
+function chartGraphic(node, key, kind) {
+  node.dataset.chartReveal = key;
+  node.dataset.chartKind = kind;
+  return node;
+}
+function finishChartAnimations() {
+  for (const [node, animations] of chartAnimations) {
+    node.dataset.chartState = "complete";
+    for (const animation of animations) animation.cancel();
+  }
+  chartAnimations.clear();
+}
+function resetChart(node) {
+  for (const animation of chartAnimations.get(node) || []) animation.cancel();
+  chartAnimations.delete(node);
+  revealedCharts.delete(node.dataset.chartReveal);
+  node.dataset.chartState = "pending";
+}
+function revealChart(node) {
+  revealedCharts.add(node.dataset.chartReveal);
+  node.dataset.chartState = "playing";
+  const options = { duration: 800, easing: chartGrowthEasing, fill: "both" };
+  let animations;
+  if (node.dataset.chartKind === "comparison") {
+    animations = [...node.querySelectorAll(".bar-mark")].map((bar) => bar.animate(
+      [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], options));
+    animations.push(...[...node.querySelectorAll(".whisker")].map((whisker) => whisker.animate(
+      [{ opacity: 0 }, { opacity: 0, offset: .75 }, { opacity: 1 }], options)));
+  } else if (node.dataset.chartKind === "ring") {
+    animations = [node.querySelector(".ring-reveal").animate(
+      [{ strokeDashoffset: 100 }, { strokeDashoffset: 0 }], { ...options, duration: 1000 })];
+  } else {
+    const axis = node.dataset.chartKind === "vertical" ? "Y" : "X";
+    animations = [node.querySelector(".chart-fill").animate(
+      [{ transform: `scale${axis}(0)` }, { transform: `scale${axis}(1)` }], options)];
+  }
+  chartAnimations.set(node, animations);
+  const complete = () => {
+    if (animations.every((animation) => animation.playState === "finished")) {
+      node.dataset.chartState = "complete";
+      for (const animation of animations) animation.cancel();
+      chartAnimations.delete(node);
+    }
+  };
+  for (const animation of animations) animation.onfinish = complete;
+  complete();
+}
+function watchCharts(reset = false) {
+  chartObserver?.disconnect();
+  finishChartAnimations();
+  if (reset) revealedCharts.clear();
+  const enabled = chartMotionOverride ?? !reducedChartMotion.matches;
+  document.documentElement.dataset.chartMotion = enabled ? "on" : "off";
+  document.querySelector("#animate-charts").checked = enabled;
+  for (const node of document.querySelectorAll("[data-chart-reveal]")) {
+    const key = node.dataset.chartReveal;
+    if (!enabled || !chartObserver || revealedCharts.has(key)) {
+      node.dataset.chartState = "complete";
+      revealedCharts.add(key);
+    } else {
+      node.dataset.chartState = "pending";
+    }
+    if (enabled && chartObserver) chartObserver.observe(node);
+  }
+}
+function completeCharts() {
+  chartObserver?.disconnect();
+  finishChartAnimations();
+  for (const node of document.querySelectorAll("[data-chart-reveal]")) {
+    node.dataset.chartState = "complete";
+    revealedCharts.add(node.dataset.chartReveal);
+  }
+}
+reducedChartMotion.addEventListener("change", () => watchCharts());
+window.addEventListener("beforeprint", completeCharts);
+window.addEventListener("afterprint", () => watchCharts());
 
 function route() {
   const [requested, query = ""] = location.hash.slice(1).split("?");
@@ -35,13 +140,15 @@ function destination(view, values = {}) {
   const query = new URLSearchParams(Object.entries(values).filter(([, value]) => value));
   return `#${view}${query.size ? `?${query}` : ""}`;
 }
-function setRoute(values) {
-  const current = route();
+function setRoute(view, values) {
+  const current = { view, params: new URLSearchParams((rememberedRoutes[view] || "").split("?")[1] || "") };
   for (const [key, value] of Object.entries(values)) {
     if (value) current.params.set(key, value);
     else current.params.delete(key);
   }
-  location.hash = destination(current.view, Object.fromEntries(current.params));
+  history.pushState(null, "", destination(current.view, Object.fromEntries(current.params)));
+  // Filters update their own section without scrolling or resetting other charts.
+  navigate();
 }
 function animateResult(node) {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -50,13 +157,38 @@ function animateResult(node) {
 }
 function announce(text) { $("#interaction-status").textContent = text; }
 function positionIndicator() {
-  const selected = document.querySelector('nav a[aria-current="page"]');
+  const selected = document.querySelector('nav a[aria-current="location"]');
   const indicator = document.querySelector("#nav-indicator");
   if (!selected || !indicator) return;
   const width = selected.offsetWidth;
   const left = selected.offsetLeft;
   indicator.style.transform = `translateX(${left}px) scaleX(${width})`;
 }
+
+function selectSection(view) {
+  $("#section-picker").value = view;
+  for (const node of document.querySelectorAll("nav [data-view]")) {
+    node.href = rememberedRoutes[node.dataset.view] || `#${node.dataset.view}`;
+    if (node.dataset.view === view) node.setAttribute("aria-current", "location");
+    else node.removeAttribute("aria-current");
+  }
+  positionIndicator();
+}
+
+let scrollFrame = 0;
+function updateScrollSection() {
+  scrollFrame = 0;
+  if (!report) return;
+  const line = document.querySelector(".site-header").getBoundingClientRect().bottom + 120;
+  let current = "overview";
+  for (const view of Object.keys(views)) {
+    if (document.getElementById(`view-${view}`).getBoundingClientRect().top <= line) current = view;
+  }
+  selectSection(current);
+}
+window.addEventListener("scroll", () => {
+  if (!scrollFrame) scrollFrame = requestAnimationFrame(updateScrollSection);
+}, { passive: true });
 
 function html(tag, text = "", className = "") {
   const node = document.createElement(tag);
@@ -132,63 +264,51 @@ function navigate(focus = false, initial = false) {
     params.delete("cohort");
     history.replaceState(null, "", destination(view, Object.fromEntries(params)));
   }
-  const changed = view !== activeView;
-  if (changed) announce("");
-  rememberedRoutes[view] = destination(view, Object.fromEntries(params));
-  $("#section-picker").value = view;
-  $("#main-content").dataset.view = view;
-  for (const node of document.querySelectorAll(".view")) node.hidden = node.id !== `view-${view}`;
-  for (const node of document.querySelectorAll("nav [data-view]")) {
-    node.href = rememberedRoutes[node.dataset.view] || `#${node.dataset.view}`;
-    if (node.dataset.view === view) node.setAttribute("aria-current", "page");
-    else node.removeAttribute("aria-current");
-  }
-  $("#page-title").textContent = views[view];
-  document.title = `${views[view]} · EveryMind`;
+  if (location.hash !== "#home") rememberedRoutes[view] = destination(view, Object.fromEntries(params));
+  const updated = [];
   if (report) {
-    if (view === "overview") {
-      const movement = params.get("chart") === "movement";
-      $("#agreement-chart").hidden = movement;
-      $("#rating-chart").hidden = !movement;
-      $("#show-intervals").checked = params.get("intervals") !== "off";
-      $("#show-intervals").closest("label").hidden = movement;
-      for (const button of document.querySelectorAll("[data-chart]")) button.setAttribute("aria-pressed", String(button.dataset.chart === (movement ? "movement" : "agreement")));
-      $("#chart-description").textContent = movement ? "Change in paired ratings" : "Agree or Strongly agree";
-      renderObjectives(changed || initial);
-    } else if (view === "learning") {
-      const filtered = params.get("cohort") === "excluding_flagged" && !$("#learning-cohort option[value=excluding_flagged]").disabled;
-      $("#learning-cohort").value = filtered ? "excluding_flagged" : "all_responses";
-      renderLearning();
-    } else if (view === "community") {
-      const group = params.get("group");
-      $("#community-group").value = ["county", "role", "language", "training_month"].includes(group) ? group : "county";
-      $("#community-skill").value = skills.some(([id]) => id === params.get("skill")) ? params.get("skill") : skills[0][0];
-      renderCommunity();
+    for (const section of ["overview", "learning", "community"]) {
+      const saved = rememberedRoutes[section] || `#${section}`;
+      if (!initial && renderedRoutes[section] === saved) continue;
+      const settings = new URLSearchParams(saved.split("?")[1] || "");
+      if (section === "overview") {
+        const movement = settings.get("chart") === "movement";
+        $("#agreement-chart").hidden = movement;
+        $("#rating-chart").hidden = !movement;
+        $("#show-intervals").checked = settings.get("intervals") !== "off";
+        $("#show-intervals").closest("label").hidden = movement;
+        for (const button of document.querySelectorAll("[data-chart]")) button.setAttribute("aria-pressed", String(button.dataset.chart === (movement ? "movement" : "agreement")));
+        $("#chart-description").textContent = movement ? "Change in paired ratings" : "Agree or Strongly agree";
+        renderObjectives();
+      } else if (section === "learning") {
+        const filtered = settings.get("cohort") === "excluding_flagged" && !$("#learning-cohort option[value=excluding_flagged]").disabled;
+        $("#learning-cohort").value = filtered ? "excluding_flagged" : "all_responses";
+        renderLearning();
+      } else if (section === "community") {
+        const group = settings.get("group");
+        $("#community-group").value = ["county", "role", "language", "training_month"].includes(group) ? group : "county";
+        $("#community-skill").value = skills.some(([id]) => id === settings.get("skill")) ? settings.get("skill") : skills[0][0];
+        renderCommunity();
+      }
+      renderedRoutes[section] = saved;
+      updated.push(section);
     }
   }
   const target = report && (view === "learning" ? document.getElementById(`outcome-${params.get("skill")}`) : view === "feedback" ? document.getElementById(`finding-${params.get("finding")}`) : null);
-  const targetKey = target?.id || "";
-  if ((focus && (changed || targetKey !== activeTarget)) || (initial && target)) {
-    if (target) {
-      if (focus) target.focus({ preventScroll: true });
-      target.scrollIntoView({ block: "start", behavior: "instant" });
-    } else {
-      $("#main-content").focus({ preventScroll: true });
-      window.scrollTo({ top: 0, behavior: "instant" });
-    }
+  if (focus || (initial && location.hash)) {
+    const anchor = location.hash === "#home" ? $("#home") : target || $(view === "overview" ? "#main-content" : `#view-${view}`);
+    if (focus) anchor.focus({ preventScroll: true });
+    anchor.scrollIntoView({ block: "start", behavior: "instant" });
   }
-  if (focus) {
-    const section = $(`#view-${view}`);
-    if (changed) {
-      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) section.animate([{ opacity: 0, transform: "translateY(5px)" }, { opacity: 1, transform: "none" }], { duration: 220, easing: motionEasing });
-    } else if (view === "learning" || view === "community") animateResult($(view === "learning" ? "#learning-details" : "#community-results"));
+  if (!initial && updated.includes(view)) {
+    if (view === "learning" || view === "community") animateResult($(view === "learning" ? "#learning-details" : "#community-results"));
     if (view === "learning") announce(`Learning outcomes updated. ${$("#learning-cohort").selectedOptions[0].textContent}.`);
     if (view === "community") announce(`Community comparison updated. ${$("#community-skill").selectedOptions[0].textContent}, by ${$("#community-group").selectedOptions[0].textContent.toLowerCase()}.`);
-    if (view === "overview" && !changed) announce(params.get("chart") === "movement" ? "Rating movement chart." : `Agreement chart. Intervals ${$("#show-intervals").checked ? "shown" : "hidden"}.`);
+    if (view === "overview") announce(params.get("chart") === "movement" ? "Rating movement chart." : `Agreement chart. Intervals ${$("#show-intervals").checked ? "shown" : "hidden"}.`);
   }
-  activeView = view;
-  activeTarget = targetKey;
-  positionIndicator();
+  selectSection(view);
+  if (initial || updated.length) watchCharts(initial);
+  updateScrollSection();
 }
 
 function renderSummary() {
@@ -220,25 +340,24 @@ function comparisonPlot(before, after, showIntervals) {
   return plot;
 }
 
-function renderObjectives(animate = false) {
+function renderObjectives() {
   const container = $("#objectives");
   container.replaceChildren();
   const intervals = skills.flatMap(([skill]) => [metric("agree_before", { skill }), metric("agree_after", { skill })]).map(Data.interval).filter(Boolean);
   const levels = [...new Set(intervals.map((ci) => percent.format(ci.level)))];
   $("#interval-explanation").textContent = levels.length === 1 ? `${levels[0]} confidence intervals` : "Confidence levels in Outcomes";
   $("#interval-explanation").hidden = !$("#show-intervals").checked || !intervals.length;
-  for (const [index, [skill, label]] of skills.entries()) {
+  for (const [skill, label] of skills) {
     const before = metric("agree_before", { skill });
     const after = metric("agree_after", { skill });
     const gain = metric("agreement_gain", { skill });
-    const row = html("div", "", `comparison-row${animate ? " chart-animate" : ""}`);
-    row.style.setProperty("--row", index);
+    const row = html("div", "", "comparison-row");
     const name = html("div", "", "objective-name");
     const objectiveLink = link(label, destination("learning", { skill }));
     objectiveLink.className = "objective-link";
     name.append(objectiveLink, html("small", `${shareText(before)} before · ${baseText(after)}`));
     const chart = html("div", "", "comparison-plot");
-    chart.append(comparisonPlot(before, after, $("#show-intervals").checked));
+    chart.append(chartGraphic(comparisonPlot(before, after, $("#show-intervals").checked), `agreement:${skill}`, "comparison"));
     const current = html("div", shareText(after), "metric-value");
     const change = html("div", gainText(gain), `gain${gain?.value < 0 ? " negative" : ""}`);
     const accessible = html("span", `Recalled before ${shareText(before)}, ${baseText(before)}. ${intervalText(before)}. Current ${shareText(after)}, ${baseText(after)}. ${intervalText(after)}. Change ${gainText(gain)}.`, "sr-only");
@@ -303,9 +422,24 @@ function movementRow(skill, label, cohort, asBars = false) {
   const distribution = html("div", "", asBars ? "movement-bar-distribution" : "movement-distribution");
   const graphic = asBars ? html("div", "", "stacked-bar")
     : svg("svg", { viewBox: "0 0 104 104" }, "movement-ring");
+  const animationKey = `movement:${asBars ? "overview" : "outcomes"}:${cohort}:${skill}`;
+  if (asBars) {
+    chartGraphic(distribution, animationKey, "horizontal");
+    graphic.classList.add("chart-fill");
+  } else chartGraphic(graphic, animationKey, "ring");
   graphic.setAttribute("aria-hidden", "true");
   if (asBars) header.append(html("span", `n=${integer.format(entries[0].n)}`));
   else graphic.append(svg("circle", { cx: 52, cy: 52, r: 42 }, "ring-track"));
+  let segments = graphic;
+  if (!asBars) {
+    const maskId = `ring-reveal-${++ringRevealId}`;
+    const defs = svg("defs", {});
+    const mask = svg("mask", { id: maskId, maskUnits: "userSpaceOnUse", x: 0, y: 0, width: 104, height: 104 });
+    mask.append(svg("circle", { cx: 52, cy: 52, r: 42, pathLength: 100, transform: "rotate(-90 52 52)" }, "ring-reveal"));
+    defs.append(mask);
+    segments = svg("g", { mask: `url(#${maskId})` }, "ring-colors");
+    graphic.append(defs, segments);
+  }
   const values = html("div", "", "movement-values");
   let offset = 0;
   entries.forEach((entry, index) => {
@@ -314,7 +448,7 @@ function movementRow(skill, label, cohort, asBars = false) {
       const segment = html("span", "", direction);
       segment.style.flex = `${entry.value} 1 0%`;
       graphic.append(segment);
-    } else graphic.append(svg("circle", { cx: 52, cy: 52, r: 42, pathLength: 100,
+    } else segments.append(svg("circle", { cx: 52, cy: 52, r: 42, pathLength: 100,
       "stroke-dasharray": `${entry.value * 100} ${100 - entry.value * 100}`,
       "stroke-dashoffset": -offset, transform: "rotate(-90 52 52)" }, `ring-segment ${direction}`));
     offset += entry.value * 100;
@@ -355,6 +489,8 @@ function renderMonths() {
       const bar = html("div", "", "month-bar");
       bar.style.height = `${entry.value / maximum * 150}px`;
       if (entry.value === 0) bar.style.minHeight = "0";
+      bar.classList.add("chart-fill");
+      if (entry.value > 0) chartGraphic(track, `month:${entry.dimensions.group}`, "vertical");
       track.append(html("span", integer.format(entry.value), "month-count"), bar);
     } else {
       track.append(html("span", unavailable(entry), "month-hidden"), html("div", "", "withheld-slot"));
@@ -480,8 +616,9 @@ function renderCoverage() {
   const content = html("div", "", "coverage-content");
   const track = html("div", "", "coverage-track");
   track.setAttribute("aria-hidden", "true");
-  const fill = html("span");
+  const fill = html("span", "", "chart-fill");
   fill.style.width = `${entry.value * 100}%`;
+  if (entry.value > 0) chartGraphic(track, "calling-coverage", "horizontal");
   track.append(fill);
   content.append(html("strong", percent.format(entry.value), "number"), track,
     html("p", `${integer.format(entry.numerator)} of ${integer.format(entry.denominator)} eligible responses answered.`));
@@ -546,8 +683,9 @@ function renderThemes() {
         if (Data.visibleShare(entry)) {
           const track = html("div", "", "theme-track");
           track.setAttribute("aria-hidden", "true");
-          const fill = html("span");
+          const fill = html("span", "", "chart-fill");
           fill.style.width = `${entry.value * 100}%`;
+          if (entry.value > 0) chartGraphic(track, `theme:feedback:${Data.key(entry.metric_id, entry.dimensions)}`, "horizontal");
           track.append(fill);
           row.append(track, html("p", `${baseText(entry)} · ${theme.method === "embedding" ? "embedding" : "codebook"}`, "chart-footnote"));
         }
@@ -574,8 +712,9 @@ function renderThemePreview() {
       label.append(html("strong", theme.label), html("span", shareText(entry), "number"));
       const track = html("div", "", "theme-track");
       track.setAttribute("aria-hidden", "true");
-      const fill = html("span");
+      const fill = html("span", "", "chart-fill");
       fill.style.width = `${entry.value * 100}%`;
+      if (entry.value > 0) chartGraphic(track, `theme:overview:${Data.key(entry.metric_id, entry.dimensions)}`, "horizontal");
       track.append(fill);
       row.append(label, html("p", `${question.label} · ${baseText(entry)}`), track);
       container.append(row);
@@ -687,21 +826,56 @@ $(".skip-link").addEventListener("click", (event) => {
   $("#main-content").scrollIntoView();
 });
 function bindMainControls() {
-  $("#show-intervals").addEventListener("change", () => { if (report) setRoute({ intervals: $("#show-intervals").checked ? "" : "off" }); });
+  $("#animate-charts").addEventListener("change", (event) => {
+    chartMotionOverride = event.target.checked;
+    try { localStorage.setItem("everymind-chart-motion", chartMotionOverride ? "on" : "off"); } catch { /* Keep the choice for this session. */ }
+    watchCharts(chartMotionOverride);
+    announce(`Chart animations ${chartMotionOverride ? "enabled" : "disabled"}.`);
+  });
+  $("#show-intervals").addEventListener("change", () => { if (report) setRoute("overview", { intervals: $("#show-intervals").checked ? "" : "off" }); });
   for (const button of document.querySelectorAll("[data-chart]")) button.addEventListener("click", () => {
     if (!report || button.getAttribute("aria-pressed") === "true") return;
-    setRoute({ chart: button.dataset.chart === "agreement" ? "" : "movement" });
+    setRoute("overview", { chart: button.dataset.chart === "agreement" ? "" : "movement" });
     animateResult(button.dataset.chart === "agreement" ? $("#agreement-chart") : $("#rating-chart"));
   });
-  $("#learning-cohort").addEventListener("change", () => { if (report) setRoute({ cohort: $("#learning-cohort").value === "all_responses" ? "" : $("#learning-cohort").value }); });
+  $("#learning-cohort").addEventListener("change", () => { if (report) setRoute("learning", { cohort: $("#learning-cohort").value === "all_responses" ? "" : $("#learning-cohort").value }); });
   for (const id of ["#community-group", "#community-skill"]) $(id).addEventListener("change", () => {
-    if (report) setRoute({ group: $("#community-group").value, skill: $("#community-skill").value });
+    if (report) setRoute("community", { group: $("#community-group").value, skill: $("#community-skill").value });
   });
 }
 bindMainControls();
-$("#section-picker").addEventListener("change", () => { location.hash = rememberedRoutes[$("#section-picker").value] || `#${$("#section-picker").value}`; });
-window.addEventListener("resize", positionIndicator);
+function jumpTo(hash) {
+  if (location.hash !== hash) history.pushState(null, "", hash);
+  navigate(true);
+}
+document.addEventListener("click", (event) => {
+  const anchor = event.target.closest("a[href^='#']");
+  if (!anchor || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const hash = anchor.getAttribute("href");
+  if (!/^#(?:home|overview|learning|community|feedback|methods)(?:\?|$)/.test(hash)) return;
+  event.preventDefault();
+  jumpTo(hash);
+});
+$("#section-picker").addEventListener("change", () => jumpTo(rememberedRoutes[$("#section-picker").value] || `#${$("#section-picker").value}`));
+window.addEventListener("resize", updateScrollSection);
 window.addEventListener("hashchange", () => navigate(true));
+window.addEventListener("popstate", () => navigate(true));
+
+const heroVideo = document.querySelector("#hero-video");
+let heroVisible = false;
+function updateHeroPlayback() {
+  // The requested decorative loop follows visibility independently of chart motion.
+  // Keep the poster if the browser blocks playback or the media cannot load.
+  if (heroVisible && !document.hidden) heroVideo.play().catch(() => {});
+  else heroVideo.pause();
+}
+if ("IntersectionObserver" in window) {
+  new IntersectionObserver(([entry]) => {
+    heroVisible = entry.isIntersecting;
+    updateHeroPlayback();
+  }).observe(heroVideo);
+} else { heroVisible = true; updateHeroPlayback(); }
+document.addEventListener("visibilitychange", updateHeroPlayback);
 navigate();
 if (location.protocol === "file:") {
   $("#load-status").textContent = "Open an aggregate report JSON to get started. Files are read in this browser.";

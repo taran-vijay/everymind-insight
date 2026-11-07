@@ -7,13 +7,15 @@ and decide what to review with trainers. This is an analysis workspace.
 
 The user's Pacer Intelligence reference sets the visual direction: deep forest
 surfaces, light sans-serif headings, compact monospace metadata, and fine square
-panel borders. A spacious heading leads into the real comparison chart and a
-narrower interpretation column. The chart carries the visual emphasis of this
-analysis workspace. Reference-site claims and assets are not report content.
+panel borders. A forest-video opening leads into one continuous report, from the
+overview through outcomes, community comparisons, feedback, and methods.
+Reference-site claims and assets are not report content.
 
 Use #101a14 as the page base, stepped forest panels, off-white text, and restrained
-mint accents. Platform sans-serif is a license-free substitute for the reference's
-display face; locally bundled Chivo Mono sets short technical labels and response bases.
+mint accents. Locally bundled Inter sets the hero title and the five main report
+headings, as requested by the user. The hero title stays on one line with fluid
+type sizing. Platform sans-serif sets remaining prose and subheadings; locally
+bundled Chivo Mono sets short technical labels and response bases.
 Keep chart metadata at least 12px and use fluid display type, hairline dividers,
 0–4px corners, and consistent content edges. Summary figures come from the report.
 Keep text contrast, direct labels, and the synthetic-data notice legible on dark
@@ -21,6 +23,9 @@ surfaces. Printed reports use light surfaces and dark text.
 
 ## Composition and interaction
 
+- The forest hero fills the opening viewport with only the title. Navigation begins below it and becomes sticky as the report scrolls. The hero scrolls away with the document; its lower-edge fade meets the page background without a hard edge.
+- Navigation links scroll to report sections rather than replacing content. Scroll position updates the active link with `aria-current="location"`.
+- The six main titles use title case. The outcomes heading shares a compact row with its cohort selector, with 24px before the first outcome card; the row stacks on phones.
 - The overview gives the chart most of the width and places the remaining gap beside it.
 - Agreement and individual rating movement share one chart workspace.
 - Keep agreement on a fixed 0–100% scale. Both series have exact values and response bases.
@@ -34,11 +39,24 @@ surfaces. Printed reports use light surfaces and dark text.
 
 ## Motion
 
-Chart values and labels remain stable while the comparison is read.
-Navigation uses a moving underline and a short, interruptible section transition.
+Bars grow from their baseline over 800ms and doughnut colours draw clockwise over
+1000ms, accelerating from slow to fast with the standard ease-in curve. Charts
+replay on entering the viewport after fully leaving it. A small threshold keeps
+partially visible charts from repeatedly restarting. Numbers and labels remain
+visible throughout. Reduced motion and
+printing show every chart in its completed form. The explicit "Animate charts"
+control can override the system motion preference for this site and remembers
+the user's choice locally. Turning it on deliberately replays the chart reveals.
+Navigation uses a moving underline while every report section remains available.
 Filter updates fade only the result, leaving controls immediate. Buttons respond
-on press; internal links reveal a small directional cue. No repeating animation,
-auto-changing chart, number counter, parallax, or scroll-triggered data replay.
+on press; internal links reveal a small directional cue.
+
+The decorative forest video plays automatically whenever visible, as explicitly
+requested by the user, and pauses offscreen or while the document is hidden.
+It keeps its original colors, without brightness or saturation filters. The
+desktop asset preserves the source's 4K resolution; a 1080p version serves narrow
+screens. Only the lower edge fades into the page. A poster covers loading and
+failed playback. Chart motion preferences remain independent of video playback.
 
 Use transform and opacity for motion. Respect reduced motion in both CSS and the
 Web Animations API, plus increased contrast and reduced transparency preferences.
@@ -58,10 +76,12 @@ report in a detached DOM tree so a rendering failure preserves the current repor
 
 - [Pacer Intelligence](https://pacer-intelligence.com/): the user's visual reference for the forest palette, technical typography, and panel system.
 - [Chivo Mono](https://github.com/google/fonts/tree/main/ofl/chivomono): bundled variable font, with its SIL Open Font License in `assets/chivo-mono-OFL.txt`.
+- [Inter](https://github.com/google/fonts/tree/main/ofl/inter): bundled variable font, with its SIL Open Font License in `assets/inter-OFL.txt`.
+- [Forest footage by Zulfugar Karimov](https://www.pexels.com/video/sunlight-streaming-through-forest-trees-38773226/): selected by the user, used under the Pexels License; source and asset details are recorded in `assets/forest-hero-LICENSE.md`.
 - [Apple chart guidance](https://developer.apple.com/design/human-interface-guidelines/charts): legible evidence, direct descriptions, accessible alternatives.
 - [Vercel Web Interface Guidelines](https://github.com/vercel-labs/web-interface-guidelines): semantics, focus, state in URLs, motion preferences, and resilient layouts.
 - [Emil Kowalski](https://github.com/emilkowalski/skills): purposeful motion and immediate interaction feedback.
 - [Awesome DESIGN.md](https://github.com/VoltAgent/awesome-design-md): Apple, Linear, and Mercury composition studies; adapted to an analysis tool.
 - [Taste Skill](https://github.com/Leonxlnx/taste-skill) and [image-to-code](https://github.com/Leonxlnx/imagegen-skills): consistent visual direction, mockup-first implementation, and browser comparison.
 
-Reference branding and assets are not included in the application.
+Pacer branding and footage are not included in the application.

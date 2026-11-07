@@ -7,16 +7,26 @@
   <meta name="theme-color" content="#101a14">
   <title>EveryMind · Training insights</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="preload" href="assets/inter-variable.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="styles.css?v=inter-headings-2">
   <script src="report-data.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=forest-fullscreen-3" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
   <div class="workspace">
+    <section id="home" class="hero" aria-labelledby="hero-title" tabindex="-1">
+      <div id="hero-media" class="hero-media" aria-hidden="true">
+        <video id="hero-video" autoplay muted playsinline loop preload="auto" poster="assets/forest-hero-poster.jpg?v=natural-4k-1" tabindex="-1">
+          <source src="assets/forest-hero-mobile.mp4?v=natural-4k-1" type="video/mp4" media="(max-width: 760px)">
+          <source src="assets/forest-hero.mp4?v=natural-4k-1" type="video/mp4">
+        </video>
+      </div>
+      <div class="hero-content"><h1 id="hero-title">Training Insights</h1></div>
+    </section>
     <header class="site-header">
       <div class="global-bar">
-        <a class="brand" href="#overview" aria-label="EveryMind training insights home"><svg class="brand-mark" aria-hidden="true" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13"/><path d="M3 16h26M16 3c-9 7-9 19 0 26M16 3c9 7 9 19 0 26M6 8h20M6 24h20"/></svg><span>EveryMind</span></a>
+        <a class="brand" href="#home" aria-label="EveryMind training insights home"><svg class="brand-mark" aria-hidden="true" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13"/><path d="M3 16h26M16 3c-9 7-9 19 0 26M16 3c9 7 9 19 0 26M6 8h20M6 24h20"/></svg><span>EveryMind</span></a>
         <nav aria-label="Report sections">
           <span id="nav-indicator" aria-hidden="true"></span>
           <a href="#overview" data-view="overview">Overview</a>
@@ -34,13 +44,13 @@
       <label class="section-select" for="section-picker">Report section<select id="section-picker"><option value="overview">Overview</option><option value="learning">Outcomes</option><option value="community">Communities</option><option value="feedback">Feedback</option><option value="methods">Methods</option></select></label>
     </header>
     <main id="main-content" tabindex="-1" data-view="overview">
-      <div class="page-heading"><div class="page-heading-copy"><h1 id="page-title">Training insights</h1></div><p class="report-date" id="report-date"></p></div>
-      <div class="report-context"><div id="draft-banner" class="sample-banner" hidden><span class="sample-tag">Fictional sample data</span></div><dl id="report-summary" class="summary-strip"></dl></div>
+      <div class="page-heading"><div class="page-heading-copy"><h2 id="page-title">Overview</h2></div><p class="report-date" id="report-date"></p></div>
+      <div class="report-context"><div class="report-tools"><div id="draft-banner" class="sample-banner" hidden><span class="sample-tag">Fictional sample data</span></div><label class="check-control chart-motion-control"><input type="checkbox" id="animate-charts">Animate charts</label></div><dl id="report-summary" class="summary-strip"></dl></div>
       <p id="load-status" class="load-status" role="status" aria-live="polite">Opening the report…</p>
       <noscript><div class="empty-state">Enable JavaScript to open a report.</div></noscript>
       <div id="initial-state" class="empty-state" hidden><h2>Open a report</h2><p>Select an aggregate report JSON file.</p></div>
       <div id="dashboard" hidden>
-        <section id="view-overview" class="view" aria-label="Overview">
+        <section id="view-overview" class="view" aria-labelledby="page-title" tabindex="-1">
           <div class="overview-story">
             <section class="panel learning-panel" aria-labelledby="objectives-heading">
               <div class="section-heading"><div><h2 id="objectives-heading">Self-reported ability</h2><p id="chart-description">Agree or Strongly agree</p></div></div>
@@ -62,19 +72,22 @@
           </div>
 
         </section>
-        <section id="view-learning" class="view" aria-label="Learning outcomes" hidden>
-          <div class="view-toolbar"><label>Response cohort<select id="learning-cohort"><option value="all_responses">All responses</option><option value="excluding_flagged">Exclude flagged responses</option></select></label></div>
+        <section id="view-learning" class="view" aria-labelledby="learning-section-heading" tabindex="-1">
+          <div class="report-section-heading learning-section-heading"><h2 id="learning-section-heading">Learning Outcomes</h2><label>Response cohort<select id="learning-cohort"><option value="all_responses">All responses</option><option value="excluding_flagged">Exclude flagged responses</option></select></label></div>
           <div id="learning-details" class="detail-list"></div>
         </section>
-        <section id="view-community" class="view" aria-label="Community reach" hidden>
+        <section id="view-community" class="view" aria-labelledby="community-section-heading" tabindex="-1">
+          <div class="report-section-heading"><h2 id="community-section-heading">Community Reach</h2></div>
           <section class="panel"><div class="section-heading"><div><h2>Group comparison</h2></div></div><div class="filter-bar"><label>Compare by<select id="community-group"><option value="county">County</option><option value="role">Participant role</option><option value="language">Language</option><option value="training_month">Training month</option></select></label><label>Learning objective<select id="community-skill"><option value="identify_crises">Identify crises</option><option value="describe_988">Describe 988</option><option value="know_when_to_use_988">Know when to use 988</option></select></label></div><div id="community-results"></div><p class="chart-footnote">Unadjusted comparisons. Participant roles may overlap. Withheld values protect small groups.</p></section>
           <section class="coverage-section" aria-labelledby="calling-heading"><h2 id="calling-heading">Calling-question coverage</h2><p>Share answering the calling-intent question.</p><div id="calling-coverage"></div></section>
         </section>
-        <section id="view-feedback" class="view" aria-label="Participant feedback" hidden>
+        <section id="view-feedback" class="view" aria-labelledby="feedback-section-heading" tabindex="-1">
+          <div class="report-section-heading"><h2 id="feedback-section-heading">Participant Feedback</h2></div>
           <section aria-labelledby="recommendations-heading"><div class="section-heading"><div><h2 id="recommendations-heading">Recommendations</h2></div></div><div id="findings" class="finding-list"></div></section>
           <section class="feedback-section" aria-labelledby="themes-heading"><div class="section-heading"><div><h2 id="themes-heading">Feedback themes</h2></div></div><div id="themes" class="secondary-grid"></div></section>
         </section>
-        <section id="view-methods" class="view" aria-label="Data and methods" hidden>
+        <section id="view-methods" class="view" aria-labelledby="methods-section-heading" tabindex="-1">
+          <div class="report-section-heading"><h2 id="methods-section-heading">Data &amp; Methods</h2></div>
           <section class="panel"><div class="section-heading"><div><h2>Data quality</h2></div></div><dl id="quality-summary" class="quality-summary"></dl><div id="quality-notes"></div></section>
           <section class="methods-section" aria-labelledby="limitations-heading"><h2 id="limitations-heading">Limitations</h2><div id="caveats" class="caveat-grid"></div></section>
           <section class="panel methods-section"><h2>Metric definitions</h2><div id="definitions" class="definitions"></div></section>

@@ -93,13 +93,13 @@ Run these commands from the repository folder after installing the project. They
 
 Open [the local dashboard](http://127.0.0.1:8000/). When an aggregate report bundle is ready, pass its path to `--report` and refresh the page. The generated `report.json` is ignored by Git. The page reads the report bundle schema used by the sample fixture.
 
-The dashboard has five sections: Overview, Learning outcomes, Community reach, Participant feedback, and Data & methods. Use **Open report** to read a different aggregate report JSON locally in the browser. The synthetic-data banner stays visible for sample reports. Invalid files leave the current report in place.
+The dashboard opens with a full-screen forest video, followed by one scrolling report with five sections: Overview, Learning Outcomes, Community Reach, Participant Feedback, and Data & Methods. Navigation links jump to each section. Use **Open report** to read a different aggregate report JSON locally in the browser. The synthetic-data banner stays visible for sample reports. Invalid files leave the current report in place.
 
-The overview switches between **Agreement** and **Rating movement**, with optional confidence intervals. Objective links open the selected outcome; cohort and community filters are preserved in the URL and support Back and reload. Short chart and section transitions respect reduced motion.
+The overview switches between **Agreement** and **Rating movement**, with optional confidence intervals. Objective links scroll to the selected outcome; cohort and community filters are preserved in the URL and support Back and reload. Bars and rings fill on entering the viewport and replay after leaving it. **Animate charts** remembers a local preference and defaults to the system motion setting. The decorative forest video automatically plays while visible and pauses offscreen.
 
-Learning outcomes includes an **Exclude flagged responses** cohort selector. Community comparisons appear only when the bundle contains the selected subgroup metrics; the sample does not include those comparisons. Feedback displays report-supplied findings, actions, and coded themes. Findings with unavailable or suppressed supporting metrics are withheld. **Print view** prints the section currently open.
+Learning Outcomes includes an **Exclude flagged responses** cohort selector. Community comparisons appear only when the bundle contains the selected subgroup metrics; the sample does not include those comparisons. Feedback displays report-supplied findings, actions, and coded themes. Findings with unavailable or suppressed supporting metrics are withheld. **Print view** prints the continuous report without the video.
 
-The frontend uses native HTML, CSS, JavaScript, and platform fonts. It requires no frontend build step or external font service. Opening `dashboard/index.html` directly also works: select a report with **Open report**.
+The frontend uses native HTML, CSS, and JavaScript, with locally bundled Inter and Chivo Mono fonts. It requires no frontend build step or external font service. Font and footage licenses are recorded in `dashboard/assets/`. Opening `dashboard/index.html` directly also works: select a report with **Open report**.
 
 For a quick preview from the repository root, without installing Python dependencies:
 
