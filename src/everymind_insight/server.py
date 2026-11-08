@@ -155,9 +155,10 @@ def create_app(input_path=None, *, root=ROOT, hosted=None):
     def index():
         if hosted:
             markup = (root / 'dashboard/index.html').read_text(encoding='utf-8')
-            notice = '<aside class="panel" role="note">Hosted demo: uploaded surveys are processed on this server in your browser session. Do not upload data without authorization. Sessions expire after 20 minutes of inactivity and are cleared when this service restarts. Maximum upload: 5 MB. <button type="button" onclick="fetch(\'/api/source\', {method: \'DELETE\'}).then(() => location.reload())">Clear my uploaded survey</button></aside>'
+            notice = '<aside class="panel hosted-notice" role="note"><p>Hosted demo: uploaded surveys are processed on this server in your browser session. Do not upload data without authorization. Sessions expire after 20 minutes of inactivity and are cleared when this service restarts. Maximum upload: 5 MB.</p><button type="button" onclick="fetch(\'/api/source\', {method: \'DELETE\'}).then(() => location.reload())">Clear my uploaded survey</button></aside>'
             markup = markup.replace('Report files stay in your browser.', 'JSON reports stay in your browser. Excel/CSV uploads are processed temporarily on this server.')
-            return HTMLResponse(markup.replace('<body>', '<body data-hosted="true">' + notice, 1))
+            markup = markup.replace('<body>', '<body data-hosted="true">', 1)
+            return HTMLResponse(markup.replace('</footer>', '</footer>' + notice, 1))
         return FileResponse(root / 'dashboard/index.html')
 
     @app.get('/{name}')
