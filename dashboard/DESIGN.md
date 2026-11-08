@@ -32,7 +32,9 @@ surfaces. Printed reports use light surfaces and dark text.
 - The overview uses paired bars for agreement and stacked bars for rating movement. Each outcome card pairs a 2×2 metric grid on the left with a larger doughnut on the right, showing higher/unchanged/lower ratings with direct labels and response counts.
 - Monthly response counts use bars. Withheld months have dashed slots without numeric height, and released zero counts stay at zero.
 - Key numeric values have a quiet 1px frame, separated from their labels and calculation notes.
-- Confidence intervals are optional, with their actual level shown. Detailed outcomes give numeric ranges.
+- Available confidence intervals always appear, with their actual level shown. Detailed outcomes give numeric ranges.
+- File selection and data options appear inside the Open report dialog, keeping the report workspace focused on results.
+- Filtering uses four checkboxes and one report-opening action. The durations are fixed at under 30 seconds and over two hours; the other options are four-point drops and missing/invalid training dates. File selection is a separate collapsed disclosure. Counts and privacy messages stay visible; advanced rules, category controls, Reset, Undo, and export controls are absent from this dialog.
 - Objective and finding links land on the selected evidence. Cohort and community filters live in the URL; Back and reload restore them.
 - Filter changes preserve control focus and announce the updated context.
 - Mobile uses a native section menu and stacked comparisons. Tables scroll inside a labelled, keyboard-accessible region.
@@ -43,10 +45,10 @@ Bars grow from their baseline over 800ms and doughnut colours draw clockwise ove
 1000ms, accelerating from slow to fast with the standard ease-in curve. Charts
 replay on entering the viewport after fully leaving it. A small threshold keeps
 partially visible charts from repeatedly restarting. Numbers and labels remain
-visible throughout. Reduced motion and
-printing show every chart in its completed form. The explicit "Animate charts"
-control can override the system motion preference for this site and remembers
-the user's choice locally. Turning it on deliberately replays the chart reveals.
+visible throughout. Chart reveals run automatically without a toggle or saved
+on/off preference, following the user's explicit request for automatic fills.
+Printing shows every chart in its completed form. Other interface transitions
+continue to respect reduced motion.
 Navigation uses a moving underline while every report section remains available.
 Filter updates fade only the result, leaving controls immediate. Buttons respond
 on press; internal links reveal a small directional cue.

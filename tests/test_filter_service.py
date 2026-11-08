@@ -23,6 +23,29 @@ def source_with_speeders(path,count=20):
     return path
 
 
+@pytest.mark.parametrize('as_text',[False,True])
+def test_excel_completion_seconds_and_strict_thirty_second_boundary(tmp_path,as_text):
+    from datetime import datetime, timedelta
+    from openpyxl import load_workbook
+    source=export(tmp_path/'durations.xlsx')
+    workbook=load_workbook(source);sheet=workbook['Survey Data']
+    # Include a midnight crossing and both sides of the 30-second boundary.
+    durations=[20,29,30,31]*20
+    start=datetime(2026,10,19,23,59,50)
+    for row,seconds in enumerate(durations,start=2):
+        finish=start+timedelta(seconds=seconds)
+        sheet.cell(row,2,start.isoformat(sep=' ') if as_text else start)
+        sheet.cell(row,3,finish.isoformat(sep=' ') if as_text else finish)
+    workbook.save(source);workbook.close()
+    original=source.read_bytes()
+    service=FilterService(source)
+    assert service.frame.duration_seconds.tolist()==durations
+    result=service.preview(FilterSpec(exclusions=['speeders']))
+    assert (result['kept'],result['removed'])==(40,40)
+    assert result['option_counts']['speeders']==40
+    assert source.read_bytes()==original
+
+
 def test_default_matches_pipeline_and_reference_counts(tmp_path,survey_workbook):
     source=survey_workbook
     current=FilterService(source)

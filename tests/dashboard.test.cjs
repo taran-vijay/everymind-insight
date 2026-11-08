@@ -2,6 +2,36 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const Data = require("../dashboard/report-data.js");
 
+test("withheld movement keeps a neutral circle without segments or protected numbers", () => {
+  const fs = require('node:fs');
+  const vm = require('node:vm');
+  const source = fs.readFileSync(require.resolve('../dashboard/app.js'),'utf8');
+  const renderer = source.slice(source.indexOf('function movementRow('),source.indexOf('function renderMonths('));
+  const report = sample();
+  const skill = 'identify_crises';
+  for (const direction of ['up','same','down']) {
+    const entry = Data.find(report.metrics,`movement_${direction}`,{skill,cohort:'all_responses'});
+    Object.assign(entry,{suppressed:true,value:null,n:null,numerator:null,denominator:null,ci:null,reason:'filter_comparison_protection'});
+  }
+  const node = (tag,attrs={},className='',textContent='') => ({
+    tag,attrs,className,textContent,children:[],append(...children){this.children.push(...children);}
+  });
+  const context = {Data,report,
+    html:(tag,text='',cls='')=>node(tag,{},cls,text),svg:node,
+    metric:(id,dimensions,cohort)=>Data.find(report.metrics,id,{...dimensions,cohort})
+  };
+  vm.createContext(context);vm.runInContext(renderer,context);
+  const result = context.movementRow(skill,'Individual rating changes','all_responses');
+  const flatten = n => [n,...n.children.flatMap(flatten)];
+  const nodes = flatten(result);
+  assert.equal(nodes.filter(n=>n.tag==='svg' && n.className.includes('movement-ring')).length,1);
+  assert.equal(nodes.filter(n=>n.tag==='circle').length,1);
+  assert.equal(nodes.filter(n=>n.className.includes('ring-segment')).length,0);
+  assert.ok(nodes.some(n=>n.textContent==='Withheld'));
+  assert.ok(nodes.some(n=>/comparing this view with the full report/.test(n.textContent)));
+  assert.ok(nodes.every(n=>!n.attrs['data-chart-reveal']));
+});
+
 test("filtered provenance rejects small complements and inconsistent counts", () => {
   const report = sample();
   report.filter_provenance = {

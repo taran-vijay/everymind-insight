@@ -14,16 +14,23 @@ From the repository folder on Windows, run:
 
 Open `http://127.0.0.1:8001/`. The server binds only to this computer. Omit
 `--input` to choose an XLSX or UTF-8 CSV in the page. Upload bytes, normalized
-responses, specifications, undo history and caches stay in memory. Nothing is
-written to localStorage except the existing chart-motion preference. Stop the
+responses, specifications and caches stay in memory. Nothing is
+written to localStorage. Stop the
 server to discard its source and cache. Uploaded surveys are never saved.
 
 Choose **Open report** to review **Data Options**. All options start unchecked.
-**Open full report (nothing removed)** is the default action. The selected options
-and category exclusions are unioned; **Any/All** combines the numeric rules only.
-The removed total counts each response once, even if several rules match.
-Exact duplicates match every original field except ID, including timestamps,
-and keep the first record. Missing training dates count as missing/invalid.
+The panel offers four checkboxes: completion under 30 seconds, completion over
+two hours, a four-point before/after drop, and missing or invalid training dates.
+Check the exclusions and use the single report button. It opens the full report
+when nothing is checked and the filtered report when exclusions are selected.
+The removed total counts each response once. Uncheck an option to remove it.
+File selection is tucked under **Choose Your Data** in the same panel; choose
+**Use this file** after selecting a replacement source.
+
+Advanced FilterSpec rules remain available through the CLI/API, outside this
+checkbox-only interface. Option and category exclusions are unioned; **Any/All**
+combines numeric rules only. Exact duplicates match every original field except
+ID, including timestamps, and keep the first record. Missing training dates count as missing/invalid.
 “Below” and “above” are strict; “between” includes its endpoints. Missing values
 match only “is missing,” and never silently act as zero.
 
@@ -50,11 +57,11 @@ For example, save this as `filters.json` to remove durations below 30 or above
 
 To remove declines in knowing when to use 988, use
 `{"field":"know_when_to_use_988_change","operator":"below","value":0}`.
-Available checkbox IDs are `exact_duplicates`, `speeders`, `long_duration`,
+Supported CLI/API option IDs are `exact_duplicates`, `speeders`, `long_duration`,
 `straightliners`, `large_drops`, `invalid_training_date`, `invalid_timestamps`.
-The editable thresholds are `speed_seconds` (default 30) and `long_seconds`
+The CLI/API thresholds are `speed_seconds` (default 30) and `long_seconds`
 (default 7,200). Optional `categorical_exclusions` contains lists named `county`,
-`role`, `language`, and `training_month`, using released labels from the page.
+`role`, `language`, and `training_month`, using released labels from `/api/fields`.
 
 Reproduce an analysis and export aggregates:
 
@@ -222,7 +229,7 @@ Open [the local dashboard](http://127.0.0.1:8000/). When an aggregate report bun
 
 The dashboard opens with a full-screen forest video, followed by one scrolling report with five sections: Overview, Learning Outcomes, Community Reach, Participant Feedback, and Data & Methods. Navigation links jump to each section. Use **Open report** to read a different aggregate report JSON locally in the browser. The synthetic-data banner stays visible for sample reports. Invalid files leave the current report in place.
 
-The overview switches between **Agreement** and **Rating movement**, with optional confidence intervals. Objective links scroll to the selected outcome; cohort and community filters are preserved in the URL and support Back and reload. Bars and rings fill on entering the viewport and replay after leaving it. **Animate charts** remembers a local preference and defaults to the system motion setting. The decorative forest video automatically plays while visible and pauses offscreen.
+The overview switches between **Agreement** and **Rating movement**, with available confidence intervals always shown. Objective links scroll to the selected outcome; cohort and community filters are preserved in the URL and support Back and reload. Bars and rings automatically fill on entering the viewport and replay after leaving it. File selection and data options appear only when **Open report** is clicked. The decorative forest video automatically plays while visible and pauses offscreen.
 
 Learning Outcomes includes an **Exclude flagged responses** cohort selector. Community comparisons appear only when the bundle contains the selected subgroup metrics; the sample does not include those comparisons. Feedback displays report-supplied findings, actions, and coded themes. Findings with unavailable or suppressed supporting metrics are withheld. **Print view** prints the continuous report without the video.
 

@@ -83,3 +83,25 @@ was used by local tests and is not included in this commit.
 - Confirmed title case on all six requested titles. The outcomes heading and cohort control now share a row, leaving a measured 24px gap before the first card on desktop.
 - The cohort control still switches between the expected 450 and 423 paired-response bases. Browser console is empty and page overflow is zero.
 - Preview saved as `outputs/everymind-title-case-spacing.jpg` in the chat workspace. Whitespace checks pass; application and data logic were not changed.
+
+## Automatic charts and report controls — November 8, 2026
+
+- Removed both chart checkboxes. Bars and rings fill automatically, including in this browser's reduced-motion environment, as explicitly requested. Navigating away sets chart states to pending; returning starts the fill again. Other interface motion still respects system preferences.
+- Agreement charts include all 18 available whisker segments and the 95% interval legend. A saved `intervals=off` link is normalized to keep intervals enabled.
+- The report begins at Overview without a file-selection section. Choose Your Data is contained in the Open report dialog. Workbook and aggregate JSON selection were checked there, including pending-file action guards and the aggregate-only explanation.
+- The real report retains its 1,299-response base. Narrow layouts have no page or dialog overflow. The browser console has no errors or warnings; the viewport override was reset.
+- JavaScript syntax, 17 data-contract tests, 8 server/dashboard checks, and whitespace checks pass. Preview: `outputs/report-controls-simplified.jpg` in the chat workspace.
+
+## Checkbox-only data options — November 8, 2026
+
+- The dialog contains four filter checkboxes: under 30 seconds, over two hours, four-point drops, and missing/invalid training dates. Numeric rules, categories, exact duplicates, straightlining, timestamp filters, editable thresholds, Reset, Undo, the second apply action, and export buttons are absent.
+- One primary button opens the full report with no boxes selected and applies the checked exclusions otherwise. Confirmed the selected filter appears in the report notice, then unchecked it and confirmed the full report notice clears. The current source was preserved.
+- File selection remains available in a separate, initially collapsed disclosure. At a 320px viewport, page and dialog scroll widths match their client widths. The viewport override was reset.
+- JavaScript syntax, 17 data-contract tests, 8 server/dashboard checks, and whitespace checks pass. Preview: `outputs/checkbox-only-data-options.jpg` in the chat workspace.
+
+## Workbook durations and filtered circles — November 8, 2026
+
+- Compared the supplied four-group workbook's original Excel timestamps with normalized durations: minimum 324 seconds, zero under 30 seconds, and 50 over two hours. Missing/invalid dates and large drops each match 50 rows. The under-30 checkbox tooltip explains the timestamp subtraction and shows the source minimum.
+- Filtered movement families can be withheld by small-cell or full-report comparison guards. The outcome layout now retains a neutral dashed circle with an explicit explanation, without reconstructing protected segments or counts.
+- With the missing-date filter, all three circle positions remain present as withheld states. With the large-drop filter, two released colored circles and one protected placeholder render correctly. No browser errors were observed.
+- Regression checks cover native Excel/text timestamps, midnight crossings and durations of 20, 29, 30, and 31 seconds. A renderer test confirms protected movement data keeps its neutral circle without colored segments or animation. 41 targeted Python tests and 18 JavaScript tests pass. Preview: `outputs/filtered-circle-states.jpg` in the chat workspace.

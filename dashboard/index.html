@@ -8,10 +8,10 @@
   <title>EveryMind · Training insights</title>
   <link rel="icon" href="data:,">
   <link rel="preload" href="assets/inter-variable.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=data-options-1">
-  <script src="report-data.js?v=data-options-1" defer></script>
-  <script src="app.js?v=data-options-1" defer></script>
-  <script src="data-options.js?v=data-options-1" defer></script>
+  <link rel="stylesheet" href="styles.css?v=checkbox-filters-3">
+  <script src="report-data.js?v=checkbox-filters-3" defer></script>
+  <script src="app.js?v=checkbox-filters-3" defer></script>
+  <script src="data-options.js?v=checkbox-filters-3" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -44,13 +44,8 @@
       <label class="section-select" for="section-picker">Report section<select id="section-picker"><option value="overview">Overview</option><option value="learning">Outcomes</option><option value="community">Communities</option><option value="feedback">Feedback</option><option value="methods">Methods</option></select></label>
     </header>
     <main id="main-content" tabindex="-1" data-view="overview">
-      <section id="report-start" class="report-start" aria-labelledby="start-heading">
-        <div><h2 id="start-heading">Choose Your Data</h2><p id="source-selection">Choose a survey export or an aggregate report.</p></div>
-        <div class="source-controls"><label for="report-picker">Survey or report file<input type="file" id="report-picker" accept=".xlsx,.csv,.json"></label><label for="source-sheet">Worksheet (XLSX only)<input id="source-sheet" type="text" value="Survey Data" maxlength="100"></label><button id="start-report" class="button button-primary" type="button">Open report</button></div>
-        <p id="source-error" role="status" aria-live="polite"></p>
-      </section>
       <div class="page-heading"><div class="page-heading-copy"><h2 id="page-title">Overview</h2></div><p class="report-date" id="report-date"></p></div>
-      <div class="report-context"><div class="report-tools"><span id="report-kind" role="status"></span><a id="download-report" class="button button-primary" href="./report.json" download="report.json">Download report JSON</a><button id="load-demo" class="button" type="button">Load synthetic demo</button><div id="draft-banner" class="sample-banner" hidden><span class="sample-tag">Fictional sample data</span></div><label class="check-control chart-motion-control"><input type="checkbox" id="animate-charts">Animate charts</label></div><dl id="report-summary" class="summary-strip"></dl></div>
+      <div class="report-context"><div class="report-tools"><span id="report-kind" role="status"></span><a id="download-report" class="button button-primary" href="./report.json" download="report.json">Download report JSON</a><button id="load-demo" class="button" type="button">Load synthetic demo</button><div id="draft-banner" class="sample-banner" hidden><span class="sample-tag">Fictional sample data</span></div></div><dl id="report-summary" class="summary-strip"></dl></div>
       <p id="filtered-banner" class="filter-notice" hidden></p>
       <p id="load-status" class="load-status" role="status" aria-live="polite">Opening the report…</p>
       <noscript><div class="empty-state">Enable JavaScript to open a report.</div></noscript>
@@ -60,7 +55,7 @@
           <div class="overview-story">
             <section class="panel learning-panel" aria-labelledby="objectives-heading">
               <div class="section-heading"><div><h2 id="objectives-heading">Self-reported ability</h2><p id="chart-description">Agree or Strongly agree</p></div></div>
-              <div class="chart-toolbar"><div class="segmented-control" role="group" aria-label="Chart measure"><button type="button" data-chart="agreement" aria-pressed="true">Agreement</button><button type="button" data-chart="movement" aria-pressed="false">Rating movement</button></div><label class="check-control"><input type="checkbox" id="show-intervals" checked>Intervals</label></div>
+              <div class="chart-toolbar"><div class="segmented-control" role="group" aria-label="Chart measure"><button type="button" data-chart="agreement" aria-pressed="true">Agreement</button><button type="button" data-chart="movement" aria-pressed="false">Rating movement</button></div></div>
               <div id="agreement-chart">
               <div class="legend"><span><i class="legend-before"></i>Recalled before</span><span><i class="legend-after"></i>Current</span><span id="interval-explanation">Whiskers show confidence intervals.</span></div>
               <div class="comparison-head" aria-hidden="true"><span>Learning objective</span><span>Share who agree</span><span>Current</span><span>Change</span></div>
@@ -108,18 +103,19 @@
     <div class="options-top"><h2 id="data-options-title">Data Options</h2><button type="button" id="close-data-options" class="button">Close</button></div>
     <p id="options-source-note">Nothing is removed unless you choose an option.</p>
     <div class="options-scroll">
-    <details class="options-help"><summary>Why remove these?</summary><p>These patterns can help review response quality. They can also be genuine answers. Removing responses changes who the report represents and can change its results. Start with the full report, then compare a clearly labeled filtered view. Exact duplicates match every original field except ID, including the timestamps; the first matching record is kept.</p></details>
+    <details id="report-start" class="report-start">
+      <summary>Choose Your Data</summary><p id="source-selection">Choose a survey export or an aggregate report.</p>
+      <div class="source-controls"><label for="report-picker">Survey or report file<input type="file" id="report-picker" accept=".xlsx,.csv,.json"></label><label for="source-sheet">Worksheet (XLSX only)<input id="source-sheet" type="text" value="Survey Data" maxlength="100"></label><button id="start-report" class="button" type="button" disabled>Use this file</button></div>
+      <p id="source-error" role="status" aria-live="polite"></p>
+    </details>
     <fieldset id="options-controls">
-      <legend>Choose Responses to Leave Out</legend>
+      <legend>Leave Out Responses</legend>
       <div id="exclusion-options"></div>
-      <section class="options-section" aria-labelledby="numeric-heading"><h3 id="numeric-heading">Numeric Rules</h3><p>Remove responses where the selected rule matches. Between includes both endpoints. Missing values match only “is missing.”</p><label for="rule-logic">Combine numeric rules<select id="rule-logic"><option value="any">Any rule matches</option><option value="all">All rules match</option></select></label><div id="numeric-rules"></div><button type="button" id="add-numeric-rule" class="button">Add a rule</button></section>
-      <details class="options-section"><summary>Leave Out Categories</summary><p>Small groups are withheld. A role exclusion removes a response if any selected role matches.</p><div id="category-options" class="category-options"></div></details>
     </fieldset>
-    <section id="options-impact" class="options-impact" aria-labelledby="impact-heading"><h3 id="impact-heading">Impact on the Report</h3><p id="impact-counts" role="status" aria-live="polite"></p><p id="impact-help"></p><div id="headline-preview"></div></section>
+    <div id="options-impact" class="options-impact"><p id="impact-counts" role="status" aria-live="polite"></p><p id="impact-help"></p></div>
     </div>
     <p id="options-error" class="options-error" role="status" aria-live="polite"></p>
-    <div class="options-actions"><button id="open-full-report" class="button button-primary" type="button">Open full report (nothing removed)</button><button id="apply-data-options" class="button" type="button">Apply options and open</button><button id="reset-data-options" class="button" type="button">Reset</button><button id="undo-data-options" class="button" type="button" disabled>Undo</button></div>
-    <div class="options-exports"><span>Download aggregate report:</span><button type="button" data-export="json" class="button">JSON</button><button type="button" data-export="csv" class="button">CSV</button><button type="button" data-export="parquet" class="button">Parquet</button></div>
+    <div class="options-actions"><button id="open-full-report" class="button button-primary" type="button">Open full report</button></div>
   </dialog>
 </body>
 </html>

@@ -34,11 +34,6 @@ const rememberedRoutes = {};
 const renderedRoutes = {};
 let ringRevealId = 0;
 const reducedChartMotion = matchMedia("(prefers-reduced-motion: reduce)");
-let chartMotionOverride = null;
-try {
-  const savedMotion = localStorage.getItem("everymind-chart-motion");
-  if (savedMotion === "on" || savedMotion === "off") chartMotionOverride = savedMotion === "on";
-} catch { /* The system preference remains the default when storage is unavailable. */ }
 const revealedCharts = new Set();
 const chartAnimations = new Map();
 const chartObserver = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
@@ -108,18 +103,16 @@ function watchCharts(reset = false) {
   chartObserver?.disconnect();
   finishChartAnimations();
   if (reset) revealedCharts.clear();
-  const enabled = chartMotionOverride ?? !reducedChartMotion.matches;
-  document.documentElement.dataset.chartMotion = enabled ? "on" : "off";
-  document.querySelector("#animate-charts").checked = enabled;
+  document.documentElement.dataset.chartMotion = "on";
   for (const node of document.querySelectorAll("[data-chart-reveal]")) {
     const key = node.dataset.chartReveal;
-    if (!enabled || !chartObserver || revealedCharts.has(key)) {
+    if (!chartObserver || revealedCharts.has(key)) {
       node.dataset.chartState = "complete";
       revealedCharts.add(key);
     } else {
       node.dataset.chartState = "pending";
     }
-    if (enabled && chartObserver) chartObserver.observe(node);
+    chartObserver?.observe(node);
   }
 }
 function completeCharts() {
@@ -130,7 +123,6 @@ function completeCharts() {
     revealedCharts.add(node.dataset.chartReveal);
   }
 }
-reducedChartMotion.addEventListener("change", () => watchCharts());
 window.addEventListener("beforeprint", completeCharts);
 window.addEventListener("afterprint", () => watchCharts());
 
@@ -153,7 +145,7 @@ function setRoute(view, values) {
   navigate();
 }
 function animateResult(node) {
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (reducedChartMotion.matches) return;
   for (const animation of node.getAnimations()) animation.cancel();
   node.animate([{ opacity: .72 }, { opacity: 1 }], { duration: 180, easing: motionEasing });
 }
@@ -261,6 +253,10 @@ function monthLabel(value) {
 
 function navigate(focus = false, initial = false) {
   const { view, params } = route();
+  if (view === "overview" && params.has("intervals")) {
+    params.delete("intervals");
+    history.replaceState(null, "", destination(view, Object.fromEntries(params)));
+  }
   if (report && view === "learning" && params.has("cohort")
     && (params.get("cohort") !== "excluding_flagged" || $("#learning-cohort option[value=excluding_flagged]").disabled)) {
     params.delete("cohort");
@@ -277,8 +273,6 @@ function navigate(focus = false, initial = false) {
         const movement = settings.get("chart") === "movement";
         $("#agreement-chart").hidden = movement;
         $("#rating-chart").hidden = !movement;
-        $("#show-intervals").checked = settings.get("intervals") !== "off";
-        $("#show-intervals").closest("label").hidden = movement;
         for (const button of document.querySelectorAll("[data-chart]")) button.setAttribute("aria-pressed", String(button.dataset.chart === (movement ? "movement" : "agreement")));
         $("#chart-description").textContent = movement ? "Change in paired ratings" : "Agree or Strongly agree";
         renderObjectives();
@@ -306,7 +300,7 @@ function navigate(focus = false, initial = false) {
     if (view === "learning" || view === "community") animateResult($(view === "learning" ? "#learning-details" : "#community-results"));
     if (view === "learning") announce(`Learning outcomes updated. ${$("#learning-cohort").selectedOptions[0].textContent}.`);
     if (view === "community") announce(`Community comparison updated. ${$("#community-skill").selectedOptions[0].textContent}, by ${$("#community-group").selectedOptions[0].textContent.toLowerCase()}.`);
-    if (view === "overview") announce(params.get("chart") === "movement" ? "Rating movement chart." : `Agreement chart. Intervals ${$("#show-intervals").checked ? "shown" : "hidden"}.`);
+    if (view === "overview") announce(params.get("chart") === "movement" ? "Rating movement chart." : "Agreement chart with available confidence intervals.");
   }
   selectSection(view);
   updateFilterNotices();
@@ -325,7 +319,7 @@ function renderSummary() {
   );
 }
 
-function comparisonPlot(before, after, showIntervals) {
+function comparisonPlot(before, after) {
   const plot = svg("svg", { viewBox: "0 0 300 64", preserveAspectRatio: "none", "aria-hidden": "true" }, "plot");
   const x = (value) => 7 + value * 286;
   const line = (x1, y1, x2, y2, className) => plot.append(svg("line", { x1, y1, x2, y2, "vector-effect": "non-scaling-stroke" }, className));
@@ -334,7 +328,7 @@ function comparisonPlot(before, after, showIntervals) {
     if (!Data.visibleShare(entry)) continue;
     plot.append(svg("rect", { x: x(0), y: y - 5, width: entry.value * 286, height: 10, rx: 1 }, `${series} bar-mark`));
     const ci = Data.interval(entry);
-    if (showIntervals && ci) {
+    if (ci) {
       line(x(ci.lower), y, x(ci.upper), y, `${series} whisker`);
       line(x(ci.lower), y - 4, x(ci.lower), y + 4, `${series} whisker`);
       line(x(ci.upper), y - 4, x(ci.upper), y + 4, `${series} whisker`);
@@ -349,7 +343,7 @@ function renderObjectives() {
   const intervals = skills.flatMap(([skill]) => [metric("agree_before", { skill }), metric("agree_after", { skill })]).map(Data.interval).filter(Boolean);
   const levels = [...new Set(intervals.map((ci) => percent.format(ci.level)))];
   $("#interval-explanation").textContent = levels.length === 1 ? `${levels[0]} confidence intervals` : "Confidence levels in Outcomes";
-  $("#interval-explanation").hidden = !$("#show-intervals").checked || !intervals.length;
+  $("#interval-explanation").hidden = !intervals.length;
   for (const [skill, label] of skills) {
     const before = metric("agree_before", { skill });
     const after = metric("agree_after", { skill });
@@ -360,7 +354,7 @@ function renderObjectives() {
     objectiveLink.className = "objective-link";
     name.append(objectiveLink, html("small", `${shareText(before)} before · ${baseText(after)}`));
     const chart = html("div", "", "comparison-plot");
-    chart.append(chartGraphic(comparisonPlot(before, after, $("#show-intervals").checked), `agreement:${skill}`, "comparison"));
+    chart.append(chartGraphic(comparisonPlot(before, after), `agreement:${skill}`, "comparison"));
     const current = html("div", shareText(after), "metric-value");
     const change = html("div", gainText(gain), `gain${gain?.value < 0 ? " negative" : ""}`);
     const accessible = html("span", `Recalled before ${shareText(before)}, ${baseText(before)}. ${intervalText(before)}. Current ${shareText(after)}, ${baseText(after)}. ${intervalText(after)}. Change ${gainText(gain)}.`, "sr-only");
@@ -418,8 +412,23 @@ function movementRow(skill, label, cohort, asBars = false) {
   header.append(html("h3", label));
   row.append(header);
   if (!entries) {
-    const anySuppressed = ["up", "same", "down"].some((direction) => metric(`movement_${direction}`, { skill }, cohort)?.suppressed);
-    row.append(html("p", anySuppressed ? "Movement breakdown withheld" : "Movement breakdown unavailable", "unavailable"));
+    const movements = ["up", "same", "down"].map((direction) => metric(`movement_${direction}`, { skill }, cohort));
+    const anySuppressed = movements.some((entry) => entry?.suppressed);
+    const comparisonProtected = movements.some((entry) => entry?.reason === "filter_comparison_protection");
+    const status = anySuppressed ? "Withheld" : "Unavailable";
+    const explanation = anySuppressed
+      ? comparisonProtected ? "Withheld to protect small groups when comparing this view with the full report." : "Withheld to protect small groups."
+      : "Not enough released data to show rating changes.";
+    if (asBars) row.append(html("p", explanation, "unavailable"));
+    else {
+      // Keep the chart space stable without drawing or inferring protected segments.
+      const distribution = html("div", "", "movement-distribution");
+      const graphic = svg("svg", { viewBox: "0 0 104 104", "aria-hidden": "true" }, "movement-ring movement-placeholder");
+      graphic.append(svg("circle", { cx: 52, cy: 52, r: 42 }, "ring-track"));
+      const text = svg("text", { x: 52, y: 55, "text-anchor": "middle" }, "ring-base");
+      text.textContent = status;graphic.append(text);
+      distribution.append(graphic, html("p", explanation, "unavailable"));row.append(distribution);
+    }
     return row;
   }
   const distribution = html("div", "", asBars ? "movement-bar-distribution" : "movement-distribution");
@@ -862,13 +871,6 @@ $(".skip-link").addEventListener("click", (event) => {
 });
 function bindMainControls() {
   $("#load-demo").addEventListener("click", openSyntheticDemo);
-  $("#animate-charts").addEventListener("change", (event) => {
-    chartMotionOverride = event.target.checked;
-    try { localStorage.setItem("everymind-chart-motion", chartMotionOverride ? "on" : "off"); } catch { /* Keep the choice for this session. */ }
-    watchCharts(chartMotionOverride);
-    announce(`Chart animations ${chartMotionOverride ? "enabled" : "disabled"}.`);
-  });
-  $("#show-intervals").addEventListener("change", () => { if (report) setRoute("overview", { intervals: $("#show-intervals").checked ? "" : "off" }); });
   for (const button of document.querySelectorAll("[data-chart]")) button.addEventListener("click", () => {
     if (!report || button.getAttribute("aria-pressed") === "true") return;
     setRoute("overview", { chart: button.dataset.chart === "agreement" ? "" : "movement" });
