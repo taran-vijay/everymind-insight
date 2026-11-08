@@ -17,6 +17,9 @@ permissions:
   contents: read
 jobs:
   build:
+    permissions:
+      contents: read
+      pages: read
     if: github.ref == 'refs/heads/master' && inputs.confirm_publication
     runs-on: ubuntu-latest
     steps:
