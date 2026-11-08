@@ -2,7 +2,7 @@
 
 ## Judges: run Excel/CSV upload locally
 
-**Public website:** [Open EveryMind Insight](https://tvworks22.github.io/everymind-insight/). The hosted viewer opens aggregate reports. For direct Excel/CSV analysis and source-row filters, use the command below.
+**Public website:** [Open EveryMind Insight](https://everymind-insight-judges.onrender.com/). Upload Excel or CSV surveys directly, review filters, and explore the results—no installation or commands required.
 
 ### One-time preparation
 
