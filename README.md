@@ -1,5 +1,38 @@
 <div align="center">
 
+## Judges: run Excel/CSV upload locally
+
+**Public website:** [Open EveryMind Insight](https://tvworks22.github.io/everymind-insight/). The hosted viewer opens aggregate reports. For direct Excel/CSV analysis and source-row filters, use the command below.
+
+### One-time preparation
+
+1. Download this repository using **Code → Download ZIP**, then extract it.
+2. Install **Python 3.11** from [python.org](https://www.python.org/downloads/) if it is not installed. Windows users should enable the Python launcher. Existing `uv` installations are also supported on macOS/Linux.
+3. Open a terminal **in the extracted project folder**. On macOS, right-click the folder in Finder → Services → **New Terminal at Folder**. On Windows, open the folder, right-click empty space → **Open in Terminal**.
+
+### Type one command
+
+**macOS / Linux:**
+
+```sh
+sh run.sh
+```
+
+**Windows PowerShell:**
+
+```powershell
+.\run.bat
+```
+
+The command installs the required tools on first use, starts the local survey server on an available port, and opens your browser automatically. First setup needs internet and can take several minutes. No activation commands, port selection, or Linux knowledge are needed.
+
+In the page, select your **XLSX or CSV** survey and follow the data-options controls to view results. No manual JSON conversion is required. Keep the terminal open while judging; press **Ctrl+C** there when finished. If the browser does not open, copy the address printed after **EveryMind is ready** into your browser.
+
+Analysis runs on this computer. The command does not publish a website or upload survey data to GitHub. Installed tools are downloaded during setup. If setup fails, check Python 3.11, internet access and write permission for the extracted folder. An incomplete `.venv` can be removed and the same command rerun; do not delete the survey file.
+
+---
+
+
 ### [Open EveryMind Insight →](https://tvworks22.github.io/everymind-insight/)
 
 **Explore training outcomes, participant feedback, and opportunities for improvement.**
