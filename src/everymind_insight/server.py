@@ -39,7 +39,15 @@ def create_app(input_path=None, *, root=ROOT, hosted=None):
         expected_origin = f'https://{hostname}' if hosted else f"{request.url.scheme}://{request.headers.get('host')}"
         if origin and origin != expected_origin:
             return JSONResponse({'detail':'Only this local page may access the survey.'},status_code=403)
-        if request.headers.get('sec-fetch-site') == 'cross-site':
+        # External links may open the public dashboard, but never survey APIs,
+        # embedded frames, subresources or state-changing requests.
+        public_navigation = (
+            hosted and request.method == 'GET'
+            and request.url.path in {'/', '/index.html'}
+            and request.headers.get('sec-fetch-mode') == 'navigate'
+            and request.headers.get('sec-fetch-dest') == 'document'
+        )
+        if request.headers.get('sec-fetch-site') == 'cross-site' and not public_navigation:
             return JSONResponse({'detail':'Cross-site access is disabled.'},status_code=403)
         if hosted and request.url.path.startswith('/api/'):
             async with processing:

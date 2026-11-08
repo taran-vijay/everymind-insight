@@ -6,6 +6,26 @@ from everymind_insight.hosted import Sessions, TTL
 from test_reporting import export
 
 
+def test_external_links_open_dashboard_without_exposing_survey_api(monkeypatch):
+    monkeypatch.setenv('RENDER_EXTERNAL_HOSTNAME', 'demo.onrender.com')
+    navigation = {'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document'}
+    with TestClient(create_app(hosted=True), base_url='https://demo.onrender.com') as client:
+        for path in ('/', '/index.html'):
+            response = client.get(path, headers=navigation)
+            assert response.status_code == 200 and 'Training Insights' in response.text
+            assert not client.cookies
+        for path in ('/api/fields', '/api/source', '/report.synthetic.json', '/app.js'):
+            assert client.get(path, headers=navigation).status_code == 403
+        assert client.post('/', headers=navigation).status_code == 403
+        assert client.post('/api/source?filename=survey.csv', content=b'fake', headers=navigation).status_code == 403
+        assert client.delete('/api/source', headers=navigation).status_code == 403
+        assert client.get('/', headers={**navigation, 'Sec-Fetch-Dest': 'iframe'}).status_code == 403
+        assert client.get('/', headers={**navigation, 'Sec-Fetch-Mode': 'cors'}).status_code == 403
+        assert client.get('/', headers={**navigation, 'Origin': 'https://evil.example'}).status_code == 403
+    with TestClient(create_app(hosted=False), base_url='http://127.0.0.1') as client:
+        assert client.get('/', headers=navigation).status_code == 403
+
+
 def test_browser_uploads_are_isolated_and_clearable(tmp_path, monkeypatch):
     monkeypatch.setenv('RENDER_EXTERNAL_HOSTNAME', 'demo.onrender.com')
     app = create_app(hosted=True)
