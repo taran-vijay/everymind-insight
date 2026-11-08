@@ -42,6 +42,13 @@
       throw new Error("Choose a version 1.0.0 aggregate report bundle.");
     }
     const seen = new Set();
+    const filter = report.filter_provenance;
+    if (filter != null && (!object(filter) || filter.schema_version !== '1.0.0' || !object(filter.spec)
+      || !digest(filter.spec_hash) || !Array.isArray(filter.description) || !filter.description.every(v=>typeof v==='string')
+      || typeof filter.banner !== 'string' || !filter.banner.startsWith('Filtered view: ')
+      || !count(filter.input_count) || !count(filter.included_count) || !count(filter.removed_count)
+      || filter.included_count < 10 || (filter.removed_count > 0 && filter.removed_count < 10)
+      || filter.input_count !== filter.included_count + filter.removed_count)) throw new Error('Invalid filter provenance or unsafe response counts.');
     for (const metric of report.metrics) {
       if (!object(metric) || typeof metric.metric_id !== "string" || !object(metric.dimensions)
         || Object.values(metric.dimensions).some((value) => typeof value !== "string")

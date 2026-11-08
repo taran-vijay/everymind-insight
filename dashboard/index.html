@@ -8,9 +8,10 @@
   <title>EveryMind · Training insights</title>
   <link rel="icon" href="data:,">
   <link rel="preload" href="assets/inter-variable.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=inter-headings-2">
-  <script src="report-data.js" defer></script>
-  <script src="app.js?v=forest-fullscreen-3" defer></script>
+  <link rel="stylesheet" href="styles.css?v=data-options-1">
+  <script src="report-data.js?v=data-options-1" defer></script>
+  <script src="app.js?v=data-options-1" defer></script>
+  <script src="data-options.js?v=data-options-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -37,15 +38,20 @@
         </nav>
         <div class="topbar-actions">
           <button id="print-report" class="button button-quiet" type="button" aria-label="Print view" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7Z"/></svg><span>Print view</span></button>
-          <label class="button button-primary" for="report-picker">Open report<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/></svg></label>
-          <input class="file-input" type="file" id="report-picker" accept=".json,application/json">
+          <button class="button button-primary" id="open-report-options" type="button">Open report</button>
         </div>
       </div>
       <label class="section-select" for="section-picker">Report section<select id="section-picker"><option value="overview">Overview</option><option value="learning">Outcomes</option><option value="community">Communities</option><option value="feedback">Feedback</option><option value="methods">Methods</option></select></label>
     </header>
     <main id="main-content" tabindex="-1" data-view="overview">
+      <section id="report-start" class="report-start" aria-labelledby="start-heading">
+        <div><h2 id="start-heading">Choose Your Data</h2><p id="source-selection">Choose a survey export or an aggregate report.</p></div>
+        <div class="source-controls"><label for="report-picker">Survey or report file<input type="file" id="report-picker" accept=".xlsx,.csv,.json"></label><label for="source-sheet">Worksheet (XLSX only)<input id="source-sheet" type="text" value="Survey Data" maxlength="100"></label><button id="start-report" class="button button-primary" type="button">Open report</button></div>
+        <p id="source-error" role="status" aria-live="polite"></p>
+      </section>
       <div class="page-heading"><div class="page-heading-copy"><h2 id="page-title">Overview</h2></div><p class="report-date" id="report-date"></p></div>
       <div class="report-context"><div class="report-tools"><span id="report-kind" role="status"></span><a id="download-report" class="button button-primary" href="./report.json" download="report.json">Download report JSON</a><button id="load-demo" class="button" type="button">Load synthetic demo</button><div id="draft-banner" class="sample-banner" hidden><span class="sample-tag">Fictional sample data</span></div><label class="check-control chart-motion-control"><input type="checkbox" id="animate-charts">Animate charts</label></div><dl id="report-summary" class="summary-strip"></dl></div>
+      <p id="filtered-banner" class="filter-notice" hidden></p>
       <p id="load-status" class="load-status" role="status" aria-live="polite">Opening the report…</p>
       <noscript><div class="empty-state">Enable JavaScript to open a report.</div></noscript>
       <div id="initial-state" class="empty-state" hidden><h2>Open a report</h2><p>Select an aggregate report JSON file.</p></div>
@@ -98,5 +104,22 @@
     </main>
     <p id="interaction-status" class="sr-only" role="status" aria-live="polite"></p>
   </div>
+  <dialog id="data-options" aria-labelledby="data-options-title">
+    <div class="options-top"><h2 id="data-options-title">Data Options</h2><button type="button" id="close-data-options" class="button">Close</button></div>
+    <p id="options-source-note">Nothing is removed unless you choose an option.</p>
+    <div class="options-scroll">
+    <details class="options-help"><summary>Why remove these?</summary><p>These patterns can help review response quality. They can also be genuine answers. Removing responses changes who the report represents and can change its results. Start with the full report, then compare a clearly labeled filtered view. Exact duplicates match every original field except ID, including the timestamps; the first matching record is kept.</p></details>
+    <fieldset id="options-controls">
+      <legend>Choose Responses to Leave Out</legend>
+      <div id="exclusion-options"></div>
+      <section class="options-section" aria-labelledby="numeric-heading"><h3 id="numeric-heading">Numeric Rules</h3><p>Remove responses where the selected rule matches. Between includes both endpoints. Missing values match only “is missing.”</p><label for="rule-logic">Combine numeric rules<select id="rule-logic"><option value="any">Any rule matches</option><option value="all">All rules match</option></select></label><div id="numeric-rules"></div><button type="button" id="add-numeric-rule" class="button">Add a rule</button></section>
+      <details class="options-section"><summary>Leave Out Categories</summary><p>Small groups are withheld. A role exclusion removes a response if any selected role matches.</p><div id="category-options" class="category-options"></div></details>
+    </fieldset>
+    <section id="options-impact" class="options-impact" aria-labelledby="impact-heading"><h3 id="impact-heading">Impact on the Report</h3><p id="impact-counts" role="status" aria-live="polite"></p><p id="impact-help"></p><div id="headline-preview"></div></section>
+    </div>
+    <p id="options-error" class="options-error" role="status" aria-live="polite"></p>
+    <div class="options-actions"><button id="open-full-report" class="button button-primary" type="button">Open full report (nothing removed)</button><button id="apply-data-options" class="button" type="button">Apply options and open</button><button id="reset-data-options" class="button" type="button">Reset</button><button id="undo-data-options" class="button" type="button" disabled>Undo</button></div>
+    <div class="options-exports"><span>Download aggregate report:</span><button type="button" data-export="json" class="button">JSON</button><button type="button" data-export="csv" class="button">CSV</button><button type="button" data-export="parquet" class="button">Parquet</button></div>
+  </dialog>
 </body>
 </html>

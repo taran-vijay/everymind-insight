@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def copy_runtime(destination: Path, *, root: Path = ROOT):
-    for name in ("index.html", "app.js", "report-data.js", "styles.css"):
+    for name in ("index.html", "app.js", "data-options.js", "report-data.js", "styles.css"):
         source = root / "dashboard" / name
         if source.is_symlink(): raise ValueError("Runtime sources must be ordinary files.")
         shutil.copy2(source, destination / name)

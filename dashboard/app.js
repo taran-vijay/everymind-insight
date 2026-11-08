@@ -26,6 +26,7 @@ const motionEasing = getComputedStyle(document.documentElement).getPropertyValue
 const chartGrowthEasing = getComputedStyle(document.documentElement).getPropertyValue("--ease-in").trim() || "ease-in";
 let renderRoot = document;
 const $ = (selector) => renderRoot.querySelector(selector);
+$('#download-report').hidden = true;
 let report = null;
 let reportDownloadURL = null;
 let requestNumber = 0;
@@ -308,6 +309,7 @@ function navigate(focus = false, initial = false) {
     if (view === "overview") announce(params.get("chart") === "movement" ? "Rating movement chart." : `Agreement chart. Intervals ${$("#show-intervals").checked ? "shown" : "hidden"}.`);
   }
   selectSection(view);
+  updateFilterNotices();
   if (initial || updated.length) watchCharts(initial);
   updateScrollSection();
 }
@@ -800,12 +802,13 @@ function render(nextReport) {
   if (reportDownloadURL) URL.revokeObjectURL(reportDownloadURL);
   reportDownloadURL = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: "application/json" }));
   $("#download-report").href = reportDownloadURL;
+  $("#download-report").hidden = false;
   bindMainControls();
   $("#print-report").disabled = false;
   navigate(false, true);
 }
 
-async function load(readReport) {
+async function load(readReport, { rowSource = false } = {}) {
   const current = ++requestNumber;
   const status = $("#load-status");
   status.classList.remove("error");
@@ -817,6 +820,8 @@ async function load(readReport) {
     $("#load-status").textContent = "";
     const total = Data.find(report.metrics, "usable_responses");
     announce(`Report opened.${Data.visibleCount(total) ? ` ${countText(total)} survey responses.` : ""}${report.data_kind === "synthetic" ? " Fictional sample data." : ""}`);
+    window.EveryMindDataOptions?.reportOpened(report, rowSource);
+    return true;
   } catch {
     if (current !== requestNumber) return;
     status.classList.add("error");
@@ -824,14 +829,23 @@ async function load(readReport) {
       ? "That file could not be opened as a valid aggregate report. Your current report is unchanged. Choose a version 1.0.0 report JSON to try again."
       : "Choose a version 1.0.0 aggregate report JSON using “Open report”, or explicitly select “Load synthetic demo”. No demo was substituted.";
     $("#initial-state").hidden = Boolean(report);
+    return false;
   }
 }
 
-$("#report-picker").addEventListener("change", (event) => {
-  const file = event.target.files[0];
-  if (file) load(async () => JSON.parse(await file.text()));
-  event.target.value = "";
-});
+function updateFilterNotices() {
+  const banner = report?.filter_provenance?.banner || "";
+  const global = document.querySelector('#filtered-banner');
+  global.textContent = banner;
+  global.hidden = !banner;
+  const targets = new Set([...document.querySelectorAll('#agreement-chart, #rating-chart, #theme-preview, #training-months, #learning-details article, #community-results, #calling-coverage, #themes article, #findings article')].map(n => n.id === 'training-months' ? n.closest('section') : n));
+  for (const node of targets) {
+    let notice = node.querySelector(':scope > [data-filter-notice]');
+    if (!banner) { notice?.remove(); continue; }
+    if (!notice) { notice = html('p','','filter-notice'); notice.dataset.filterNotice = ''; node.prepend(notice); }
+    notice.textContent = banner;
+  }
+}
 function openSyntheticDemo() { load(async () => {
   let response = await fetch("./report.synthetic.json");
   if (response.status === 404) response = await fetch("../fixtures/report.sample.json");
@@ -899,13 +913,26 @@ if ("IntersectionObserver" in window) {
 } else { heroVisible = true; updateHeroPlayback(); }
 document.addEventListener("visibilitychange", updateHeroPlayback);
 navigate();
+window.EveryMindReport = { load, current: () => report };
+window.everymindBackendReady = (async () => {
+  if (location.protocol === 'file:') return null;
+  try { const response = await fetch('./api/fields'); return response.ok ? await response.json() : null; }
+  catch { return null; }
+})();
 if (location.protocol === "file:") {
   $("#load-status").textContent = "Open an aggregate report JSON to get started. Files are read in this browser.";
   $("#initial-state").hidden = false;
 } else {
-  load(async () => {
+  window.everymindBackendReady.then((backend) => {
+    if (backend) {
+      $('#load-status').textContent = 'Choose Open report to review data options. Nothing is excluded by default.';
+      $('#initial-state').hidden = true;
+      return;
+    }
+    return load(async () => {
     let response = await fetch("./report.json");
     if (!response.ok) throw new Error("Report fetch failed");
     return response.json();
+    });
   });
 }

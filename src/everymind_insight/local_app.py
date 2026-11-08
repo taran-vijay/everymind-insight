@@ -19,7 +19,7 @@ class LocalHandler(SimpleHTTPRequestHandler):
         path = unquote(urlsplit(self.path).path)
         if ".." in PurePosixPath(path).parts or "\\" in path:
             return False
-        if path in {"/", "/index.html", "/app.js", "/styles.css", "/report-data.js", "/report.json", "/report.synthetic.json"}:
+        if path in {"/", "/index.html", "/app.js", "/data-options.js", "/styles.css", "/report-data.js", "/report.json", "/report.synthetic.json"}:
             return True
         if not path.startswith("/assets/"):
             return False

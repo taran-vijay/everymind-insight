@@ -1,6 +1,27 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const Data = require("../dashboard/report-data.js");
+
+test("filtered provenance rejects small complements and inconsistent counts", () => {
+  const report = sample();
+  report.filter_provenance = {
+    schema_version: '1.0.0', spec: {schema_version:'1.0.0', exclusions:['speeders']},
+    spec_hash: 'a'.repeat(64), input_count: 80, included_count: 60, removed_count: 20,
+    description: ['finished in under 30 seconds'],
+    banner: 'Filtered view: finished in under 30 seconds. 60 of 80 responses included. Not the full-sample result.'
+  };
+  assert.equal(Data.validate(report), report);
+  for (const mutate of [
+    p => {p.removed_count=1;p.included_count=79;},
+    p => {p.included_count=9;p.removed_count=71;},
+    p => {p.input_count=81;},
+    p => {p.spec_hash='invalid';},
+    p => {p.banner='Full sample';}
+  ]) {
+    const invalid=structuredClone(report); mutate(invalid.filter_provenance);
+    assert.throws(()=>Data.validate(invalid),/filter provenance/);
+  }
+});
 const fixture = require("../fixtures/report.sample.json");
 const sample = () => structuredClone(fixture);
 
