@@ -1,5 +1,41 @@
 # everymind-insight
 
+
+## Start here: complete local survey workflow
+
+**This branch connects the supplied survey export to a validated dashboard report.** The current forest design, videos, fonts and animations are preserved. GitHub Pages deployment is prepared but remains manual and disabled on this branch.
+
+1. Extract/download the project into a writable folder. Install **Python 3.11** if needed.
+2. On macOS, double-click **Start EveryMind.command**. On Windows, open **Start EveryMind.bat**. On Linux, run **start-everymind.sh**. macOS/Linux can also use an existing `uv` installation to obtain Python 3.11.
+3. Choose **1** for the clearly labeled synthetic demo, or **2** to select an XLSX/UTF-8 CSV survey export. For XLSX, press Enter for the `Survey Data` worksheet or enter the actual name.
+4. The browser opens the current dashboard. Keep the launcher window open; press **Ctrl+C** there to stop.
+
+First launch installs the analytics/test dependencies and needs internet. The workbook is read locally and is not uploaded. If the file picker is unavailable, paste its full path. A failed survey never silently substitutes the demo. If macOS opens the launcher as text, use Open With → Terminal, or run `sh "Start EveryMind.command"` from this folder. If setup was interrupted, remove only `.venv` and reopen the launcher. Native Windows/Linux launcher execution still requires platform-specific verification.
+
+### Your outputs
+
+| File | Purpose |
+| --- | --- |
+| `reports/report.json` | Complete aggregate report: skill results, both quality cohorts, released community/month tables, calling coverage/intent, topic counts and evidence-linked recommendation drafts. Review before sharing. |
+| `reports/private-quality.json` | **PRIVATE** schema/quality diagnostics and source-row locators for reviewing comment coding. Never add this file or the workbook to a public site. |
+
+Both outputs are ignored by Git. Successful runs replace the local outputs; save historical copies separately if needed. A failed run may leave earlier files in place: check the generation timestamp.
+
+**Open report reads JSON in the browser; it does not upload a workbook or run Python on GitHub Pages.** Download report JSON downloads the report currently displayed. Load synthetic demo is explicit and visibly labeled. Missing/unavailable and privacy-withheld results are not zero.
+
+### Important interpretation limits
+
+- Recalled-before/current ratings describe self-reported change, not a causal training effect.
+- Flags identify responses for review; both skill cohorts support sensitivity checks.
+- Calling intent describes stated willingness among valid answers, not actual calls. Blank answers may mean not asked, skipped or invalid.
+- Comment topics use a deterministic English keyword codebook, not sentiment analysis. Topics overlap; non-English, unmatched and negated examples require private manual review.
+- Recommendations are controlled drafts grounded in released evidence, with suggested owners, next steps and measures. No human approval is implied.
+- Privacy release checks protect small counts, complements and related comparisons. They do not provide differential privacy or guarantee safety across linked reports and external information.
+
+[Backend guide and tests](docs/BACKEND_GUIDE.md) · [GitHub Pages and judge instructions](docs/PAGES.md) · [AI process record](docs/AI_PROCESS.md) · [Submission checklist](docs/SUBMISSION_CHECKLIST.md)
+
+---
+
 Local analytics for EveryMind's 988 awareness training survey. Phase 1 reads an export, checks for changes to the survey questions, normalizes responses, and saves a private quality report.
 
 ## Run the Phase 1 check on Windows
@@ -107,7 +143,7 @@ For a quick preview from the repository root, without installing Python dependen
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-Then open [the dashboard](http://127.0.0.1:8000/dashboard/). It falls back to the synthetic fixture when no generated `dashboard/report.json` exists.
+Then open [the dashboard](http://127.0.0.1:8000/dashboard/). If no generated `dashboard/report.json` exists, select **Load synthetic demo** explicitly. Missing real reports are never silently replaced by sample data.
 
 Run the frontend data-contract checks with Node.js 18 or later:
 

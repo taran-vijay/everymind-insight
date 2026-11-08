@@ -1,0 +1,55 @@
+name: Publish reviewed GitHub Pages package
+on:
+  workflow_dispatch:
+    inputs:
+      report:
+        description: Report to publish (approved requires public/report.reviewed.json)
+        type: choice
+        options: [synthetic, approved]
+        default: synthetic
+        required: true
+      confirm_publication:
+        description: I have reviewed disclosure and anonymous judging requirements and authorize public deployment
+        type: boolean
+        default: false
+        required: true
+permissions:
+  contents: read
+jobs:
+  build:
+    if: github.ref == 'refs/heads/master' && inputs.confirm_publication
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[test]'
+      - run: python -m pytest -q
+      - run: node --test tests/dashboard.test.cjs
+      - name: Prepare only the runtime assets and selected aggregate report
+        env:
+          REPORT_CHOICE: ${{ inputs.report }}
+        run: |
+          if [ "$REPORT_CHOICE" = "approved" ]; then
+            python -m everymind_insight pages --report public/report.reviewed.json --out dist/pages
+          else
+            python -m everymind_insight pages --report fixtures/report.sample.json --out dist/pages
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist/pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish selected package
+        id: deployment
+        uses: actions/deploy-pages@v4

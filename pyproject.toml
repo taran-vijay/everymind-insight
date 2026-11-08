@@ -31,7 +31,7 @@ everymind_insight = "everymind_insight.cli:app"
 where = ["src"]
 
 [tool.setuptools.package-data]
-everymind_insight = ["defaults/*.yaml"]
+everymind_insight = ["defaults/*.yaml", "defaults/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -188,6 +188,64 @@ def phase3(
 
 
 @app.command()
+def report(
+    source: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
+    output: Annotated[Path, typer.Option(help="Validated aggregate report for the dashboard.")] = Path("reports/report.json"),
+    audit_output: Annotated[Path, typer.Option(help="Separate PRIVATE schema and quality diagnostics.")] = Path("reports/private-quality.json"),
+    sheet: Annotated[str | None, typer.Option(help="Override the XLSX worksheet name.")] = None,
+    config_dir: Annotated[Path | None, typer.Option(exists=True, file_okay=False)] = None,
+    role_policy: Annotated[RolePolicyOption | None, typer.Option()] = None,
+    synthetic: Annotated[bool, typer.Option(help="Label a generated/test survey as synthetic.")] = False,
+) -> None:
+    """Analyze an export and build the complete, privacy-checked dashboard report."""
+    from .reporting import build_report
+
+    _validate_output(source, output)
+    _validate_output(source, audit_output)
+    if output.resolve() == audit_output.resolve():
+        raise typer.BadParameter("Keep the aggregate report and private audit in separate files.")
+    try:
+        bundle, audit = build_report(source, sheet=sheet, config_dir=config_dir,
+                                    role_policy=role_policy.value if role_policy else None, synthetic=synthetic)
+        _write_json(audit_output, audit)
+        _write_json(output, bundle.model_dump(mode="json"))
+    except (OSError, ValueError, yaml.YAMLError):
+        typer.echo("Report could not be completed. Check the worksheet, ID and paired-question headers, file format and output permissions. Use check for private diagnostics. No demo was substituted; check timestamps before using older outputs.", err=True)
+        raise typer.Exit(1) from None
+    typer.echo(f"Validated {bundle.data_kind} report saved to {output}.")
+    typer.echo(f"PRIVATE audit saved to {audit_output}. Keep it private. Review topics, recommendations and disclosure risks before sharing the aggregate.")
+
+
+@app.command("validate-report")
+def validate_report(source: Annotated[Path, typer.Argument(exists=True, dir_okay=False)]):
+    """Check the report contract, public surface and release rules."""
+    from .release import validate_release
+    from .schemas import ReportBundle
+    try:
+        bundle = ReportBundle.model_validate_json(source.read_bytes())
+        validate_release(bundle)
+    except (OSError, ValueError):
+        typer.echo("Not a valid releasable report. Do not substitute private phase3 or quality JSON.", err=True)
+        raise typer.Exit(1) from None
+    typer.echo(f"Validated {bundle.data_kind} report. Validation is not approval to publish.")
+
+
+@app.command()
+def pages(
+    report: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path("fixtures/report.sample.json"),
+    out: Annotated[Path, typer.Option(help="New or empty website-only output directory.")] = Path("dist/pages"),
+) -> None:
+    """Prepare a local GitHub Pages package. Does not publish anything."""
+    from .pages import prepare_pages
+    try:
+        prepare_pages(report, out)
+    except (OSError, ValueError):
+        typer.echo("Could not prepare Pages files. Select a valid release report and a new or empty output folder.", err=True)
+        raise typer.Exit(1) from None
+    typer.echo(f"Website package ready at {out}. Nothing was published. Review report disclosure and anonymous judging requirements before deployment.")
+
+
+@app.command()
 def dashboard(
     report: Annotated[
         Path, typer.Option(exists=True, dir_okay=False, readable=True, help="Public report bundle to copy.")

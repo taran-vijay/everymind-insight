@@ -285,7 +285,9 @@ def ingest(path: str | Path, registry: SurveyRegistry, *, sheet: str | None = No
     headers.extend([None] * (width - len(headers)))
     if not any(_normalize_header(header) for header in headers):
         raise ValueError("The survey input does not contain a named header row.")
-    rows = [row for row in source_rows if not all(_blank_cell(value) for value in row)]
+    retained = [(record, row) for record, row in enumerate(source_rows, start=2)
+                if not all(_blank_cell(value) for value in row)]
+    rows = [row for _, row in retained]
     raw = pd.DataFrame(rows, columns=range(width), dtype=object)
 
     audit = _match_headers(headers, registry)
@@ -301,6 +303,7 @@ def ingest(path: str | Path, registry: SurveyRegistry, *, sheet: str | None = No
         "input_row_count": len(rows),
         "input_column_count": width,
         "blank_row_count": len(source_rows) - len(rows),
+        "source_record_numbers": [record for record, _ in retained],
         "worksheet": worksheet,
     })
     return IngestedSurvey(frame=frame, audit=audit)
