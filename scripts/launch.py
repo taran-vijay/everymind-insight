@@ -22,13 +22,14 @@ def main():
             subprocess.run([str(interpreter), '-m', 'venv', str(environment)], check=True)
             subprocess.run([str(python), '-m', 'pip', 'install', '-e', str(ROOT) + '[test]'], cwd=ROOT, check=True)
         check = subprocess.run([str(python), '-c',
-            'import everymind_insight.reporting; from pathlib import Path; '
+            'import everymind_insight.reporting, everymind_insight.server, uvicorn; from pathlib import Path; '
             f'assert Path(everymind_insight.reporting.__file__).resolve().is_relative_to(Path({str(ROOT)!r}).resolve())'],
             cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if check.returncode:
-            print('This environment is incomplete or points to a different checkout. Close the launcher, remove only .venv, and reopen it.')
-            return 1
-        return subprocess.call([str(python), '-m', 'everymind_insight.local_app'], cwd=ROOT)
+            print('Updating the local environment for this checkout…')
+            subprocess.run([str(python), '-m', 'pip', 'install', '-e', str(ROOT) + '[test]'], cwd=ROOT, check=True)
+        module = 'everymind_insight.judge_app' if '--judge' in sys.argv else 'everymind_insight.local_app'
+        return subprocess.call([str(python), '-m', module], cwd=ROOT)
     except (OSError, subprocess.CalledProcessError):
         print('Setup failed. Check Python 3.11, your internet connection and folder permissions. To repair an incomplete setup, close this window, remove only .venv, and reopen the launcher.')
         return 1
