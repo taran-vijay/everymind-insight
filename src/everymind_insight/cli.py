@@ -196,6 +196,9 @@ def report(
     config_dir: Annotated[Path | None, typer.Option(exists=True, file_okay=False)] = None,
     role_policy: Annotated[RolePolicyOption | None, typer.Option()] = None,
     synthetic: Annotated[bool, typer.Option(help="Label a generated/test survey as synthetic.")] = False,
+    filters: Annotated[Path | None, typer.Option(exists=True, dir_okay=False, help="Version 1.0.0 FilterSpec JSON; no exclusions by default.")] = None,
+    csv_output: Annotated[Path | None, typer.Option(help="Optional aggregate-only CSV export.")] = None,
+    parquet_output: Annotated[Path | None, typer.Option(help="Optional aggregate-only Parquet export.")] = None,
 ) -> None:
     """Analyze an export and build the complete, privacy-checked dashboard report."""
     from .reporting import build_report
@@ -204,16 +207,60 @@ def report(
     _validate_output(source, audit_output)
     if output.resolve() == audit_output.resolve():
         raise typer.BadParameter("Keep the aggregate report and private audit in separate files.")
+    destinations = [p.resolve() for p in (output,audit_output,csv_output,parquet_output) if p is not None]
+    protected = {source.resolve()} | ({filters.resolve()} if filters else set())
+    if len(destinations) != len(set(destinations)) or protected.intersection(destinations):
+        raise typer.BadParameter("Use distinct output files, separate from the survey and filter specification.")
+    filter_spec = None
+    if filters is not None:
+        from pydantic import ValidationError
+        from .filters import FilterSpec
+        try:
+            filter_spec = FilterSpec.model_validate_json(filters.read_bytes())
+        except ValidationError as error:
+            messages = '; '.join(item['msg'] for item in error.errors(include_input=False))
+            raise typer.BadParameter(f"Invalid filter specification: {messages}", param_hint="--filters") from None
+        except OSError:
+            raise typer.BadParameter("The filter specification could not be read.", param_hint="--filters") from None
     try:
-        bundle, audit = build_report(source, sheet=sheet, config_dir=config_dir,
-                                    role_policy=role_policy.value if role_policy else None, synthetic=synthetic)
+        if filters is not None:
+            from .filter_service import FilterService
+            current = FilterService(source, sheet=sheet, config_dir=config_dir, role_policy=role_policy.value if role_policy else None)
+            bundle = current.open_report(filter_spec)
+            if synthetic: bundle.data_kind = 'synthetic'
+            audit = {"visibility":"private_local_diagnostics", "ingestion":current.prepared.incoming.audit,
+                     **current.prepared.quality.report, "filter_spec":filter_spec.canonical()}
+        else:
+            bundle, audit = build_report(source, sheet=sheet, config_dir=config_dir,
+                                        role_policy=role_policy.value if role_policy else None, synthetic=synthetic)
         _write_json(audit_output, audit)
         _write_json(output, bundle.model_dump(mode="json"))
+        if csv_output or parquet_output:
+            from .filter_service import export_report
+            for destination, format in ((csv_output,'csv'),(parquet_output,'parquet')):
+                if destination: _write_atomic(destination,export_report(bundle,format))
     except (OSError, ValueError, yaml.YAMLError):
         typer.echo("Report could not be completed. Check the worksheet, ID and paired-question headers, file format and output permissions. Use check for private diagnostics. No demo was substituted; check timestamps before using older outputs.", err=True)
         raise typer.Exit(1) from None
     typer.echo(f"Validated {bundle.data_kind} report saved to {output}.")
     typer.echo(f"PRIVATE audit saved to {audit_output}. Keep it private. Review topics, recommendations and disclosure risks before sharing the aggregate.")
+
+
+@app.command()
+def serve(
+    input: Annotated[Path | None, typer.Option(exists=True, dir_okay=False, help="Optional XLSX/CSV survey; otherwise choose one in the page.")] = None,
+    port: Annotated[int, typer.Option(min=1, max=65535)] = 8001,
+):
+    """Open the data-options dashboard on this computer only. Uploads stay in memory."""
+    import uvicorn
+    from .server import create_app
+    try:
+        application = create_app(input)
+    except (OSError,ValueError):
+        typer.echo("Survey could not be prepared. Check the worksheet, IDs and paired questions; at least 10 usable responses are required.",err=True)
+        raise typer.Exit(1) from None
+    typer.echo(f"Open http://127.0.0.1:{port}/ — survey data and filter caches stay in memory. Press Ctrl+C to stop.")
+    uvicorn.run(application,host='127.0.0.1',port=port,access_log=False)
 
 
 @app.command("validate-report")

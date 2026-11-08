@@ -76,7 +76,7 @@ def test_export_to_bundle_and_pages(tmp_path, suffix):
     assert bundle.findings and bundle.theme_data.questions
     assert audit['comment_review']['status'] == 'human_review_required'
     report = tmp_path / 'release.json'
-    report.write_text(bundle.model_dump_json())
+    report.write_text(bundle.model_dump_json(), encoding='utf-8')
     site = tmp_path / 'site'
     prepare_pages(report, site)
     assert ReportBundle.model_validate_json((site / 'report.json').read_bytes()) == bundle

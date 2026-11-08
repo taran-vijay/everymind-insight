@@ -138,6 +138,31 @@ class ReleaseMetadata(SchemaModel):
     recommendation_status: Literal["automated_draft_for_staff_review"] = "automated_draft_for_staff_review"
 
 
+class FilterProvenance(SchemaModel):
+    schema_version: Literal["1.0.0"] = "1.0.0"
+    spec: dict
+    spec_hash: HashDigest
+    input_count: NonnegativeInt
+    included_count: NonnegativeInt
+    removed_count: NonnegativeInt
+    description: list[str]
+    banner: str
+
+    @model_validator(mode="after")
+    def validate_filter(self):
+        from .filters import FilterSpec, describe_spec
+        spec = FilterSpec.model_validate(self.spec)
+        if self.spec_hash != spec.spec_hash or self.description != describe_spec(spec):
+            raise ValueError("Filter provenance does not match its specification.")
+        if self.input_count != self.included_count + self.removed_count or self.included_count < 10:
+            raise ValueError("Filter response counts do not reconcile or are too small.")
+        if 0 < self.removed_count < 10:
+            raise ValueError("A small excluded complement must not be exported.")
+        expected = f"Filtered view: {'; '.join(self.description)}. {self.included_count:,} of {self.input_count:,} responses included. Not the full-sample result."
+        if self.banner != expected: raise ValueError("Filtered-view banner does not match its provenance.")
+        return self
+
+
 class ReportBundle(SchemaModel):
     schema_version: Literal["1.0.0"] = "1.0.0"
     generated_at: AwareDatetime
@@ -151,6 +176,7 @@ class ReportBundle(SchemaModel):
     definitions: dict[str, str]
     caveats: list[Caveat]
     release_metadata: ReleaseMetadata | None = None
+    filter_provenance: FilterProvenance | None = None
 
     @model_validator(mode="after")
     def validate_references(self) -> "ReportBundle":

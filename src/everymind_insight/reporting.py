@@ -5,6 +5,7 @@ import json
 import platform
 from datetime import datetime, timezone
 from importlib.metadata import version
+from dataclasses import dataclass
 from pathlib import Path
 
 from .config import OBJECTIVE_ITEMS, load_config
@@ -81,17 +82,40 @@ def draft_findings(metrics):
     return findings
 
 
-def build_report(source: Path, *, sheet=None, config_dir=None, synthetic=False, role_policy=None):
+@dataclass
+class PreparedReport:
+    config: object
+    incoming: object
+    normalized: object
+    quality: object
+
+
+def prepare_report(source: Path | bytes, *, suffix=None, sheet=None, config_dir=None, role_policy=None):
     config = load_config(config_dir)
     if role_policy is not None:
         config.normalization.role_policy = role_policy
-    incoming = ingest(source, config.registry, sheet=sheet)
+    from .ingestion import ingest_bytes
+    incoming = ingest_bytes(source, suffix, config.registry, sheet=sheet) if isinstance(source, bytes) else ingest(source, config.registry, sheet=sheet)
     present = set(incoming.audit["present_columns"])
     if not {"id", *OBJECTIVE_ITEMS}.issubset(present):
         raise ValueError("Required ID or paired skill questions are missing or ambiguous. Use check for a private schema audit.")
     normalized = normalize(incoming.frame, config.normalization, config.registry)
     quality = build_quality_report(normalized, config.quality)
+    quality.frame['_response_group'] = incoming.response_groups
+    return PreparedReport(config, incoming, normalized, quality)
+
+
+def build_report(source: Path | None = None, *, sheet=None, config_dir=None, synthetic=False, role_policy=None,
+                 prepared=None, filters=None, public_only=False):
+    prepared = prepared or prepare_report(source, sheet=sheet, config_dir=config_dir, role_policy=role_policy)
+    config, incoming, normalized, quality = prepared.config, prepared.incoming, prepared.normalized, prepared.quality
+    present = set(incoming.audit["present_columns"])
     frame = quality.frame
+    if filters is not None:
+        from .filters import selection
+        frame = frame.loc[frame.is_usable_id]
+        kept, _, _ = selection(frame, filters)
+        frame = frame.loc[kept]
     usable = frame.loc[frame.is_usable_id]
     if usable.empty:
         raise ValueError("No usable IDs. Check for missing or duplicate response IDs.")
@@ -99,6 +123,7 @@ def build_report(source: Path, *, sheet=None, config_dir=None, synthetic=False, 
     config_hash = hashlib.sha256(json.dumps({
         "settings": config.model_dump(mode="json"), "codebook_hash": book_hash,
         "release_policy": "1.0.0", "software_version": SOFTWARE_VERSION,
+        **({"filter_spec": filters.canonical()} if filters is not None and filters.active else {}),
     }, sort_keys=True).encode()).hexdigest()
     settings = config.phase3
     minimum = max(10, settings.minimum_n)
@@ -106,12 +131,12 @@ def build_report(source: Path, *, sheet=None, config_dir=None, synthetic=False, 
     objectives = analyze_objectives(frame, normalized.objective_columns, seed=settings.seed,
                                     bootstrap_resamples=settings.bootstrap_resamples, **hashes)
     subgroups = analyze_subgroups(frame, normalized.objective_columns, config.normalization,
-                                  minimum_n=minimum, minimum_clusters=settings.minimum_clusters, **hashes)
+                                  minimum_n=minimum, minimum_clusters=settings.minimum_clusters, public_only=public_only, **hashes)
     versions = analyze_survey_versions(frame, known_roles=set(config.normalization.role_aliases.values()),
                                        minimum_n=minimum, seed=settings.seed, shuffles=settings.shuffles,
-                                       dominance_threshold=settings.dominance_threshold, **hashes)
+                                       dominance_threshold=settings.dominance_threshold, public_only=public_only, **hashes)
     delivery = analyze_delivery(frame, normalized.objective_columns, minimum_n=minimum,
-                                seed=settings.seed, bootstrap_resamples=settings.bootstrap_resamples, **hashes)
+                                seed=settings.seed, bootstrap_resamples=settings.bootstrap_resamples, public_only=public_only, **hashes)
     comments, themes, review = analyze_themes(frame, present_questions=present,
                                              source_record_numbers=incoming.audit["source_record_numbers"], **hashes)
     # Keep small comment response/missingness counts from being inferred via n.

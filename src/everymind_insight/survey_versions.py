@@ -266,7 +266,7 @@ def _concentration_metrics(
 
 def analyze_survey_versions(
     frame: pd.DataFrame, *, input_hash: str, config_hash: str, known_roles: set[str],
-    minimum_n: int = 10, seed: int = 988, shuffles: int = 2000, dominance_threshold: float = 0.8,
+    minimum_n: int = 10, seed: int = 988, shuffles: int = 2000, dominance_threshold: float = 0.8, public_only: bool = False,
 ) -> SurveyVersionAnalysis:
     """Analyze observed item coverage without assigning exposure to blank answers."""
     if minimum_n < 1 or seed < 0 or shuffles < 1 or not 0.5 < dominance_threshold <= 1:
@@ -274,6 +274,9 @@ def analyze_survey_versions(
 
     usable = frame.loc[frame["is_usable_id"]].reset_index(drop=True)
     usable = usable.assign(_date=usable["training_date"].dt.strftime("%Y-%m-%d").fillna(_UNKNOWN_DATE))
+    if public_only:
+        provenance = Provenance(input_hash=input_hash, config_hash=config_hash, method="valid_answer_counts", population="Responses with usable IDs.")
+        return SurveyVersionAnalysis(_calling_by_group({"Overall": usable}, "overall", "all_responses", set(), provenance, minimum_n, additive=True), [], [])
     fingerprints = _fingerprints(usable)
     statuses = {fingerprint.training_date or _UNKNOWN_DATE: fingerprint.calling_status for fingerprint in fingerprints}
     proxy_dates = {

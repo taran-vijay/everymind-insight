@@ -222,6 +222,7 @@ def analyze_delivery(
     seed: int = 988,
     bootstrap_resamples: int = 2000,
     minimum_n: int = 10,
+    public_only: bool = False,
 ) -> list[Metric]:
     """Analyze valid delivery and recommendation ratings with and without flagged responses."""
     if seed < 0 or bootstrap_resamples < 1 or minimum_n < 1:
@@ -233,6 +234,7 @@ def analyze_delivery(
         ("all_responses", usable, "Responses with usable IDs, including responses with quality flags."),
         ("excluding_flagged", usable.loc[~usable["is_flagged"]], "Responses with usable IDs and no quality flags."),
     ):
+        if public_only and cohort != "all_responses": continue
         provenance = Provenance(
             input_hash=input_hash, config_hash=config_hash, method="valid_score_counts", population=population,
         )
@@ -243,6 +245,7 @@ def analyze_delivery(
         for item in (*PRESENTER_ITEMS, _RECOMMEND):
             scores = subset[item]
             ledger.extend(_ratings(scores, item, cohort, provenance, minimum_n))
+            if public_only: continue
             for skill, gain in gains.items():
                 dimensions = {"cohort": cohort, "skill": skill}
                 if item != _RECOMMEND:

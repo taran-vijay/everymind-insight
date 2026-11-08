@@ -42,6 +42,7 @@ class IngestedSurvey:
 
     frame: pd.DataFrame
     audit: dict[str, Any]
+    response_groups: pd.Series
 
 
 def _read_xlsx(source: bytes, sheet: str) -> tuple[list[Any], list[list[Any]]]:
@@ -272,7 +273,13 @@ def ingest(path: str | Path, registry: SurveyRegistry, *, sheet: str | None = No
     if suffix not in {".xlsx", ".csv"}:
         raise ValueError("The survey input must be an .xlsx workbook or a .csv file.")
 
-    source = input_path.read_bytes()
+    return ingest_bytes(input_path.read_bytes(), suffix, registry, sheet=sheet)
+
+
+def ingest_bytes(source: bytes, suffix: str, registry: SurveyRegistry, *, sheet: str | None = None) -> IngestedSurvey:
+    """Parse uploaded bytes in memory without creating an uploaded file."""
+    if suffix not in {".xlsx", ".csv"}:
+        raise ValueError("Choose an XLSX or UTF-8 CSV survey export.")
     worksheet = (sheet or registry.sheet) if suffix == ".xlsx" else None
     if worksheet is None:
         source_headers, source_rows = _read_csv(source)
@@ -306,4 +313,8 @@ def ingest(path: str | Path, registry: SurveyRegistry, *, sheet: str | None = No
         "source_record_numbers": [record for record, _ in retained],
         "worksheet": worksheet,
     })
-    return IngestedSurvey(frame=frame, audit=audit)
+    # Preserve equality across ALL original columns, including unknown questions.
+    # Integer groups remain private and allow deduplication after unusable IDs are removed.
+    answers = raw.drop(columns=[by_id['id']]) if 'id' in by_id else raw
+    groups = pd.factorize(pd.MultiIndex.from_frame(answers), sort=False)[0] if len(answers.columns) else [0] * len(raw)
+    return IngestedSurvey(frame=frame, audit=audit, response_groups=pd.Series(groups,index=raw.index))

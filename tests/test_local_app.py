@@ -1,5 +1,6 @@
 import json
 import threading
+import shutil
 from functools import partial
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -49,8 +50,8 @@ def test_survey_launcher_saves_separate_outputs(tmp_path, monkeypatch):
     root = tmp_path / 'project with spaces'
     root.mkdir()
     # Use original runtime assets without copying the source workbook into site.
-    (root / 'dashboard').symlink_to(ROOT / 'dashboard', target_is_directory=True)
-    (root / 'fixtures').symlink_to(ROOT / 'fixtures', target_is_directory=True)
+    shutil.copytree(ROOT / 'dashboard', root / 'dashboard', ignore=shutil.ignore_patterns('report.json'))
+    shutil.copytree(ROOT / 'fixtures', root / 'fixtures')
     monkeypatch.setattr(local_app, 'ROOT', root)
     answers = iter(['2', ''])
     monkeypatch.setattr('builtins.input', lambda _: next(answers))
@@ -69,8 +70,8 @@ def test_survey_launcher_saves_separate_outputs(tmp_path, monkeypatch):
 def test_demo_leaves_a_saved_survey_report_unchanged(tmp_path, monkeypatch):
     root = tmp_path / 'project'
     root.mkdir()
-    (root / 'dashboard').symlink_to(ROOT / 'dashboard', target_is_directory=True)
-    (root / 'fixtures').symlink_to(ROOT / 'fixtures', target_is_directory=True)
+    shutil.copytree(ROOT / 'dashboard', root / 'dashboard', ignore=shutil.ignore_patterns('report.json'))
+    shutil.copytree(ROOT / 'fixtures', root / 'fixtures')
     (root / 'reports').mkdir()
     saved = root / 'reports/report.json'
     saved.write_text('old survey report')

@@ -222,6 +222,10 @@ __marimo__/
 # Private inputs and generated reports
 data/
 reports/
+uploads/
+*.parquet
+*.arrow
+*.feather
 *.[xX][lL][sS]
 *.[xX][lL][sS][xXmMbB]
 *.[cC][sS][vV]

@@ -326,7 +326,7 @@ def _model_metrics(
 
 def analyze_subgroups(
     frame: pd.DataFrame, objective_columns: dict[str, dict[str, str]], normalization: NormalizationConfig, *,
-    input_hash: str, config_hash: str, minimum_n: int = 10, minimum_clusters: int = 8,
+    input_hash: str, config_hash: str, minimum_n: int = 10, minimum_clusters: int = 8, public_only: bool = False,
 ) -> list[Metric]:
     """Summarize paired skills and role-adjusted county contrasts in both quality cohorts."""
     if minimum_n < 1 or minimum_clusters < 2:
@@ -338,11 +338,13 @@ def analyze_subgroups(
         ("all_responses", usable, "Responses with usable IDs, including quality-flagged responses."),
         ("excluding_flagged", usable.loc[~usable["is_flagged"]], "Responses with usable IDs and no quality flags."),
     ):
+        if public_only and cohort != "all_responses": continue
         scope = _Scope(Provenance(input_hash=input_hash, config_hash=config_hash, method="subgroup_analysis",
                                   population=population), cohort, minimum_n)
         memberships = _memberships(subset, normalization)
         entries, withheld = _group_tables(scope, subset, memberships, objective_columns, labels)
         ledger.extend(entries)
+        if public_only: continue
         disjoint_role = _approved_labels(
             subset["role_group"], set(normalization.role_aliases.values()) | {"Multiple roles"},
             "Unknown role", "Missing role",
