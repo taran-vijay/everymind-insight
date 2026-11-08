@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0",
+  "questions": {
+    "valuable_comment": {
+      "label": "What participants found valuable",
+      "themes": [
+        {"id": "understanding_988", "label": "Understanding 988 and contact options", "patterns": ["\\b988\\b", "\\b(?:hotline|lifeline|texting|chat)\\b"]},
+        {"id": "recognizing_crises", "label": "Recognizing crises and warning signs", "patterns": ["\\b(?:crisis|crises|warning signs?|recogniz\\w*|identif\\w*)\\b"]},
+        {"id": "supporting_others", "label": "Supporting other people", "patterns": ["\\b(?:listen\\w*|empathy|supporting others|help(?:ing)? (?:someone|others|people)|de.?escalat\\w*)\\b"]},
+        {"id": "resources", "label": "Access to support and resources", "patterns": ["\\b(?:resources?|services?|support|available|access)\\b"]}
+      ]
+    },
+    "improve_comment": {
+      "label": "Topics mentioned in improvement feedback",
+      "themes": [
+        {"id": "practice", "label": "Examples, scenarios and practice", "patterns": ["\\b(?:examples?|scenarios?|practice|interactive|role[ -]?play\\w*|case stud\\w*|hands[ -]?on)\\b"]},
+        {"id": "pacing", "label": "Timing and pacing", "patterns": ["\\b(?:shorter|longer|length|time|fast|slow|pacing|breaks?)\\b"]},
+        {"id": "materials", "label": "Materials and accessibility", "patterns": ["\\b(?:slides?|handouts?|materials?|captions?|spanish|languages?|translat\\w*|accessib\\w*)\\b"]},
+        {"id": "no_change", "label": "Explicit no-change or no-suggestion responses", "patterns": ["^(?:nothing|none|n/?a|no changes?(?: needed)?|no suggestions?|good as is|great as is)[.! ]*$"]}
+      ]
+    }
+  }
+}

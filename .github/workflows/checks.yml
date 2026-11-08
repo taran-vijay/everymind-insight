@@ -1,0 +1,19 @@
+name: Survey report checks
+on:
+  push:
+    branches: [master, backend-fixes]
+  pull_request:
+    branches: [master]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[test]'
+      - run: python -m pytest -q
+      - run: node --test tests/dashboard.test.cjs

@@ -27,6 +27,7 @@ const chartGrowthEasing = getComputedStyle(document.documentElement).getProperty
 let renderRoot = document;
 const $ = (selector) => renderRoot.querySelector(selector);
 let report = null;
+let reportDownloadURL = null;
 let requestNumber = 0;
 const rememberedRoutes = {};
 const renderedRoutes = {};
@@ -399,7 +400,7 @@ function renderFocus() {
     && entry.metric_refs.some((ref) => ref.metric_id === "below_agree_after" && ref.dimensions.skill === largest.skill
       && ref.dimensions.cohort === "all_responses"));
   const action = html("div", "", "focus-action");
-  action.append(html("h3", finding ? "Recommendation" : "Review"),
+  action.append(html("h3", finding ? (report.release_metadata ? "Recommendation draft" : "Recommendation") : "Review"),
     html("p", finding ? finding.action : "Review participant feedback for this objective."));
   if (finding) {
     action.append(html("span", `${finding.confidence[0].toUpperCase() + finding.confidence.slice(1)} confidence`, "confidence-tag"));
@@ -622,6 +623,10 @@ function renderCoverage() {
   track.append(fill);
   content.append(html("strong", percent.format(entry.value), "number"), track,
     html("p", `${integer.format(entry.numerator)} of ${integer.format(entry.denominator)} eligible responses answered.`));
+  const intent = metric("calling_intent_mean", { group_by: "overall", group: "Overall" });
+  if (Data.released(intent)) {
+    content.append(html("p", `Mean stated willingness: ${decimal.format(intent.value)} out of 10, among ${integer.format(intent.n)} valid answers. This does not measure actual calls.`));
+  }
   container.append(content);
 }
 
@@ -641,7 +646,7 @@ function renderFindings() {
     const header = html("div", "", "finding-top");
     header.append(html("h3", finding.observation), html("span", `${finding.confidence[0].toUpperCase() + finding.confidence.slice(1)} confidence`, "confidence-tag"));
     const action = html("div", "", "action-line");
-    action.append(html("strong", "Recommendation"), html("span", finding.action));
+    action.append(html("strong", report.release_metadata ? "Recommendation draft" : "Recommendation"), html("span", finding.action));
     const details = html("details");
     details.append(html("summary", "Supporting evidence & limitations"));
     const list = html("ul");
@@ -671,7 +676,11 @@ function renderThemes() {
     const panel = html("article", "", "panel");
     const answered = refMetric(question.answered);
     panel.append(html("h3", question.label), html("p", Data.visibleCount(answered)
-      ? `${countText(answered)} valid answers` : `Answer count ${unavailable(answered).toLowerCase()}`, "theme-base"));
+      ? `${countText(answered)} ${report.release_metadata ? "nonblank" : "valid"} answers` : `Answer count ${unavailable(answered).toLowerCase()}`, "theme-base"));
+    for (const ref of question.diagnostics || []) {
+      const diagnostic = refMetric(ref);
+      panel.append(html("p", `${diagnostic.definition} ${metricText(diagnostic)}.`, "chart-footnote"));
+    }
     if (!question.themes.length) panel.append(html("p", "No coded themes supplied for this question.", "chart-footnote"));
     for (const theme of question.themes) {
       for (const ref of theme.prevalence) {
@@ -777,6 +786,7 @@ function render(nextReport) {
     time.dateTime = generated.toISOString();
     $("#report-date").replaceChildren(html("span", "Report generated"), time);
     $("#draft-banner").hidden = report.data_kind !== "synthetic";
+    $("#report-kind").textContent = report.data_kind === "synthetic" ? "SYNTHETIC DEMO — illustrative values" : "SURVEY REPORT — calculated from survey responses";
     $("#dashboard").hidden = false;
     $("#initial-state").hidden = true;
     $("#load-status").textContent = "";
@@ -787,6 +797,9 @@ function render(nextReport) {
     renderRoot = document;
   }
   liveMain.replaceWith(stagedMain);
+  if (reportDownloadURL) URL.revokeObjectURL(reportDownloadURL);
+  reportDownloadURL = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: "application/json" }));
+  $("#download-report").href = reportDownloadURL;
   bindMainControls();
   $("#print-report").disabled = false;
   navigate(false, true);
@@ -809,7 +822,7 @@ async function load(readReport) {
     status.classList.add("error");
     status.textContent = report
       ? "That file could not be opened as a valid aggregate report. Your current report is unchanged. Choose a version 1.0.0 report JSON to try again."
-      : "Choose a version 1.0.0 aggregate report JSON using “Open report”. To explore the sample, serve the repository locally and reopen this page.";
+      : "Choose a version 1.0.0 aggregate report JSON using “Open report”, or explicitly select “Load synthetic demo”. No demo was substituted.";
     $("#initial-state").hidden = Boolean(report);
   }
 }
@@ -819,6 +832,14 @@ $("#report-picker").addEventListener("change", (event) => {
   if (file) load(async () => JSON.parse(await file.text()));
   event.target.value = "";
 });
+function openSyntheticDemo() { load(async () => {
+  let response = await fetch("./report.synthetic.json");
+  if (response.status === 404) response = await fetch("../fixtures/report.sample.json");
+  if (!response.ok) throw new Error("Demo unavailable");
+  const demo = await response.json();
+  if (demo.data_kind !== "synthetic") throw new Error("Demo must be synthetic");
+  return demo;
+}); }
 $("#print-report").addEventListener("click", () => window.print());
 $(".skip-link").addEventListener("click", (event) => {
   event.preventDefault();
@@ -826,6 +847,7 @@ $(".skip-link").addEventListener("click", (event) => {
   $("#main-content").scrollIntoView();
 });
 function bindMainControls() {
+  $("#load-demo").addEventListener("click", openSyntheticDemo);
   $("#animate-charts").addEventListener("change", (event) => {
     chartMotionOverride = event.target.checked;
     try { localStorage.setItem("everymind-chart-motion", chartMotionOverride ? "on" : "off"); } catch { /* Keep the choice for this session. */ }
@@ -883,7 +905,6 @@ if (location.protocol === "file:") {
 } else {
   load(async () => {
     let response = await fetch("./report.json");
-    if (response.status === 404) response = await fetch("../fixtures/report.sample.json");
     if (!response.ok) throw new Error("Report fetch failed");
     return response.json();
   });

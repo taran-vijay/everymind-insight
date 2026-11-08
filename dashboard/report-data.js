@@ -61,6 +61,9 @@
       if (metric.suppressed && ["value", "numerator", "denominator", "ci", "n"].some((field) => metric[field] != null)) {
         throw new Error("Suppressed metrics must omit all numeric fields.");
       }
+      if (metric.value == null && (typeof metric.reason !== "string" || !metric.reason.trim())) {
+        throw new Error("Unavailable or suppressed metrics require a reason.");
+      }
       if (!metric.suppressed) {
         if (metric.n != null && !count(metric.n)) throw new Error("Invalid response count.");
         for (const field of ["value", "numerator", "denominator"]) {
@@ -101,6 +104,14 @@
       }
     }
     if (!report.quality_report.metrics.every(reference)) throw new Error("Invalid quality references.");
+    if (report.release_metadata != null) {
+      const meta = report.release_metadata;
+      if (!object(meta) || meta.policy_version !== "1.0.0"
+        || !["software_version", "python_version", "codebook_version"].every((name) => typeof meta[name] === "string")
+        || !digest(meta.codebook_hash) || !object(meta.library_versions)
+        || !Object.values(meta.library_versions).every((value) => typeof value === "string")
+        || meta.recommendation_status !== "automated_draft_for_staff_review") throw new Error("Invalid release metadata.");
+    }
     return report;
   }
   function safeFinding(finding, metrics) {

@@ -146,3 +146,21 @@ test("rejects unsupported formats and malformed written content before rendering
     assert.throws(() => Data.validate(report));
   }
 });
+
+test("rejects unavailable metrics without reasons", () => {
+  const report = sample();
+  const metric = report.metrics.find((entry) => entry.suppressed);
+  metric.reason = " ";
+  assert.throws(() => Data.validate(report), /reason/);
+});
+test("checks optional release metadata without requiring it on legacy samples", () => {
+  const report = sample();
+  report.release_metadata = {
+    policy_version: "1.0.0", software_version: "test", python_version: "3.11",
+    codebook_version: "1.0.0", codebook_hash: "a".repeat(64),
+    library_versions: { pandas: "test" }, recommendation_status: "automated_draft_for_staff_review",
+  };
+  assert.equal(Data.validate(report), report);
+  report.release_metadata.codebook_hash = "invalid";
+  assert.throws(() => Data.validate(report), /release metadata/);
+});

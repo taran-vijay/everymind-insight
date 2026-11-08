@@ -252,3 +252,6 @@ huggingface/
 *.joblib
 *.npy
 *.npz
+
+# Local website packages and validation evidence
+/dist/

@@ -60,12 +60,16 @@ class Metric(MetricReference):
 
     @model_validator(mode="after")
     def validate_release_state(self) -> "Metric":
-        if self.value is None and not self.reason:
+        if self.value is None and (not self.reason or not self.reason.strip()):
             raise ValueError("Unavailable or suppressed metrics require a reason")
         if self.suppressed and any(
             value is not None for value in (self.value, self.numerator, self.denominator, self.ci, self.n)
         ):
             raise ValueError("Suppressed metrics must omit numeric fields")
+        if self.unit == "count" and self.value is not None and (self.value < 0 or self.value != int(self.value)):
+            raise ValueError("Counts must be nonnegative whole numbers")
+        if self.unit == "p_value" and self.value is not None and not 0 <= self.value <= 1:
+            raise ValueError("P-values must be between zero and one")
         if self.unit in ("proportion", "percentage_point") and self.value is not None:
             if self.numerator is None or self.denominator is None or self.denominator <= 0:
                 raise ValueError("Released shares and percentage-point changes require their calculation base")
@@ -124,11 +128,21 @@ class SuppressionPolicy(SchemaModel):
     scope: Literal["within_table"] = "within_table"
 
 
+class ReleaseMetadata(SchemaModel):
+    policy_version: Literal["1.0.0"] = "1.0.0"
+    software_version: str
+    python_version: str
+    library_versions: dict[str, str]
+    codebook_version: str
+    codebook_hash: HashDigest
+    recommendation_status: Literal["automated_draft_for_staff_review"] = "automated_draft_for_staff_review"
+
+
 class ReportBundle(SchemaModel):
     schema_version: Literal["1.0.0"] = "1.0.0"
     generated_at: AwareDatetime
     input_hash: HashDigest
-    data_kind: Literal["survey", "synthetic"] = "survey"
+    data_kind: Literal["survey", "synthetic"]
     metrics: list[Metric]
     findings: list[Finding]
     theme_data: ThemeData
@@ -136,6 +150,7 @@ class ReportBundle(SchemaModel):
     suppression_policy: SuppressionPolicy
     definitions: dict[str, str]
     caveats: list[Caveat]
+    release_metadata: ReleaseMetadata | None = None
 
     @model_validator(mode="after")
     def validate_references(self) -> "ReportBundle":
