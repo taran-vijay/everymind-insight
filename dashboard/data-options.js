@@ -1,6 +1,7 @@
 /* Checkbox-only data options. Source files and selections stay in memory only. */
 (() => {
   'use strict';
+  const hosted = document.body.dataset.hosted === 'true';
   const byId = id => document.getElementById(id);
   const blank = () => ({schema_version:'1.0.0',exclusions:[],numeric_rules:[],rule_logic:'any',categorical_exclusions:{county:[],role:[],language:[],training_month:[]},speed_seconds:30,long_seconds:7200});
   const filterOptions = [
@@ -111,14 +112,15 @@
           aggregate=ReportData.validate(JSON.parse(await pendingFile.text()));rowMode=false;spec=blank();
           byId('source-selection').textContent='Aggregate report ready. Open it unchanged, or choose a survey to enable data options.';
         } else {
-          if(!backend)throw new Error('To analyze XLSX or CSV files, start the local survey server. Aggregate JSON reports can be opened directly.');
-          if(pendingFile.size>50*1024*1024)throw new Error('Choose a survey smaller than 50 MB.');
-          byId('source-selection').textContent='Reading your survey locally…';
+          if(!backend)throw new Error(hosted ? 'The survey service is not ready. Refresh the page and try again.' : 'To analyze XLSX or CSV files, start the local survey server. Aggregate JSON reports can be opened directly.');
+          const limitMB = hosted ? 5 : 50;
+          if(pendingFile.size>limitMB*1024*1024)throw new Error(`Choose a survey smaller than ${limitMB} MB.`);
+          byId('source-selection').textContent=hosted ? 'Reading your survey on the hosted server…' : 'Reading your survey locally…';
           const query=new URLSearchParams({filename:pendingFile.name});const sheet=byId('source-sheet').value.trim();if(sheet)query.set('sheet',sheet);
           const response=await fetch(`./api/source?${query}`,{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:pendingFile});
           const data=await response.json();if(!response.ok)throw new Error(data.detail || 'The survey could not be read.');
           metadata=data;rowMode=true;aggregate=null;spec=blank();
-          byId('source-selection').textContent=`Survey ready: ${count(metadata.total)} responses. Data stays on this computer.`;
+          byId('source-selection').textContent=`Survey ready: ${count(metadata.total)} responses. ${hosted ? 'Data is held temporarily on the hosted server for your browser session.' : 'Data stays on this computer.'}`;
         }
         sourceChosen=true;pendingFile=null;byId('report-picker').value='';
       }

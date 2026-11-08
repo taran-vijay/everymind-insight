@@ -1,95 +1,112 @@
 <div align="center">
 
-## Judges: run Excel/CSV upload locally
+# EveryMind Insight
 
-**Public website:** [Open EveryMind Insight](https://tvworks22.github.io/everymind-insight/). The hosted viewer opens aggregate reports. For direct Excel/CSV analysis and source-row filters, use the command below.
+**Turn Understanding 988 training feedback into evidence for the next decision.**
+
+### [Open the application →](https://everymind-insight-judges.onrender.com/)
+
+Upload an Excel or CSV survey, review the data options, and explore the results.
+
+**No installation. No terminal commands. No manual JSON conversion.**
+
+[Get started](#get-started) · [What makes it useful](#what-makes-it-useful) · [Run locally](#run-locally) · [How it works](#how-it-works) · [For contributors](#for-contributors)
+
+</div>
+
+---
+
+## Get started
+
+1. **[Open EveryMind Insight](https://everymind-insight-judges.onrender.com/)** and select **Open report**.
+2. Under **Survey or report file**, choose your authorized **Excel (.xlsx)** or **CSV (.csv)** survey export.
+3. For Excel, confirm the worksheet name. The default is **Survey Data**.
+4. Select **Use this file**. Review the response count and any responses you want to leave out; nothing is excluded by default.
+5. Select **Open full report**, or **Open filtered report** when exclusions are selected.
+
+You can also choose **Load synthetic demo** to explore illustrative results without uploading a file. Check the source label before interpreting any numbers. Prepared aggregate **report JSON** files can be opened through the same file picker.
+
+> **For judges:** use the application link above for direct Excel/CSV analysis. The separate [GitHub Pages viewer](https://tvworks22.github.io/everymind-insight/) opens aggregate JSON reports and the synthetic demonstration; it cannot process Excel/CSV surveys on its own.
+
+### Before uploading
+
+| Hosted application | What to expect |
+| :--- | :--- |
+| File size | Up to **5 MB** per Excel/CSV upload |
+| Processing | Survey data is sent to the Render server for analysis |
+| Separation | Each browser session has its own uploaded survey and filter history |
+| Temporary storage | In-memory sessions expire after **20 minutes of inactivity**, checked on API access; service restarts clear them |
+| Finish your review | Use **Clear my uploaded survey** at the bottom of the page |
+| Free hosting | The service can take time to wake after inactivity; you may need to upload again |
+
+Upload only data you are authorized to process on this service. For analysis that stays on your computer, use the [local option](#run-locally).
+
+## What makes it useful
+
+EveryMind Insight helps reviewers examine what participants report learning, where gaps remain, and what to investigate before changing training. Each headline is supported by its calculation base and interpretation limits.
+
+| Practical question | Evidence you can inspect |
+| :--- | :--- |
+| Do participants feel more prepared? | Recalled-before and current agreement for three training objectives, plus individual rating movement |
+| Where could reinforcement help? | Remaining gaps by objective and descriptive community comparisons |
+| How stable are the findings? | Confidence intervals and sensitivity comparisons with and without quality-flagged responses |
+| Whose responses are represented? | County, participant role, language, training-month coverage, and question-specific denominators |
+| What did participants discuss? | Aggregate topics in learning and improvement comments, with coding-coverage information |
+| What should the team consider next? | Recommendation drafts linked to supporting metrics and limitations |
+
+### Four principles behind the report
+
+- **Evidence traceability.** Metrics retain methods, denominators and input/settings fingerprints. Findings link to the metrics that support them.
+- **Visible uncertainty.** Confidence intervals, missingness and quality-flag sensitivity help reviewers distinguish an estimate from a firm conclusion.
+- **Privacy-aware release.** Small cells, complements and related results can be withheld. Raw comments and private diagnostics are excluded from the aggregate dashboard report.
+- **Survey integrity.** Header checks, response-ID checks, paired-answer requirements and quality flags make problems visible before results are interpreted.
+
+These safeguards reduce disclosure and interpretation risks. They do not certify anonymity, source accuracy, or permission to publish a report.
+
+## Explore the dashboard
+
+| Section | Start here to… |
+| :--- | :--- |
+| **Overview** | See the headline outcomes, remaining gap, feedback topics and response coverage |
+| **Outcomes** | Inspect each objective, complete pairs, rating movement and calculation context |
+| **Communities** | Compare released results by county, role, language or training month |
+| **Feedback** | Review coded topics and evidence-linked recommendation drafts |
+| **Methods** | Inspect quality checks, definitions, provenance and limitations |
+
+**Unavailable**, **withheld** and **zero** mean different things. A withheld value is protected by a release rule; it is not a zero. Recommendation text is a draft for staff review, not an approved decision.
+
+## Run locally
+
+Choose this option when survey analysis should stay on your computer. The local upload server uses the same dashboard and analysis pipeline.
 
 ### One-time preparation
 
-1. Download this repository using **Code → Download ZIP**, then extract it.
-2. Install **Python 3.11** from [python.org](https://www.python.org/downloads/) if it is not installed. Windows users should enable the Python launcher. Existing `uv` installations are also supported on macOS/Linux.
-3. Open a terminal **in the extracted project folder**. On macOS, right-click the folder in Finder → Services → **New Terminal at Folder**. On Windows, open the folder, right-click empty space → **Open in Terminal**.
+1. Download the repository using **Code → Download ZIP**, then extract it into a writable folder.
+2. Install **[Python 3.11](https://www.python.org/downloads/)** if needed. On Windows, enable the Python launcher during installation. macOS/Linux users with `uv` can also use the launcher.
+3. Open a terminal in the extracted project folder. On macOS, right-click the folder in Finder → **Services → New Terminal at Folder**. On Windows, open the folder and choose **Open in Terminal**.
 
-### Type one command
+### Start the upload dashboard
 
-**macOS / Linux:**
+**macOS / Linux**
 
 ```sh
 sh run.sh
 ```
 
-**Windows PowerShell:**
+**Windows PowerShell**
 
 ```powershell
 .\run.bat
 ```
 
-The command installs the required tools on first use, starts the local survey server on an available port, and opens your browser automatically. First setup needs internet and can take several minutes. No activation commands, port selection, or Linux knowledge are needed.
+First setup downloads and installs dependencies, which requires internet and can take several minutes. The launcher starts the server on an available local port and opens your browser. Follow the same file-selection steps as the hosted application. No environment activation or port selection is needed.
 
-In the page, select your **XLSX or CSV** survey and follow the data-options controls to view results. No manual JSON conversion is required. Keep the terminal open while judging; press **Ctrl+C** there when finished. If the browser does not open, copy the address printed after **EveryMind is ready** into your browser.
+Keep the terminal open while using the application. Press **Ctrl+C** there to stop it. If the browser does not open, use the address printed after **EveryMind is ready**.
 
-Analysis runs on this computer. The command does not publish a website or upload survey data to GitHub. Installed tools are downloaded during setup. If setup fails, check Python 3.11, internet access and write permission for the extracted folder. An incomplete `.venv` can be removed and the same command rerun; do not delete the survey file.
+<details>
+<summary><strong>Alternative: double-click the guided launcher</strong></summary>
 
----
-
-
-
-**Explore training outcomes, participant feedback, and opportunities for improvement.**
-
-No installation is required to view the dashboard.
-
-</div>
-
-1. Open the application and scroll past the introduction.
-2. Check whether you are viewing a **survey report** or the **synthetic demonstration**.
-3. Explore the results using the report sections, filters, and evidence panels.
-
-> **Local data options:** The local `serve` command accepts Excel/CSV uploads in memory and offers checkbox filters before opening a report. The hosted static application accepts prepared report JSON. See the [local data-options guide](docs/DATA_OPTIONS.md).
-
----
-
-# EveryMind Insight
-
-### From training feedback to practical decisions.
-
-EveryMind Insight helps teams understand what participants report learning from Understanding 988 training, where knowledge gaps remain, and which aspects of future training deserve closer attention.
-
-The application combines survey analysis with an interactive dashboard. Results are accompanied by calculation bases, uncertainty intervals, quality checks, and interpretation limits so reviewers can examine the evidence behind the headline numbers.
-
-**[Open the application](https://tvworks22.github.io/everymind-insight/)** · **[Explore the dashboard](#explore-the-dashboard)** · **[Understand the results](#understand-the-results)** · **[Technical details](#technical-architecture)**
-
----
-
-## What can you learn?
-
-| Question | What the application provides |
-| :--- | :--- |
-| Do participants feel more prepared? | Recalled-before and current agreement for three training objectives |
-| Where might reinforcement help? | Remaining gaps and the direction of individual rating changes |
-| How stable are the results? | Confidence intervals and comparisons with and without quality-flagged responses |
-| Do outcomes differ across groups? | Released comparisons by county, participant role, language, and training month |
-| What did participants discuss? | Aggregate topics from valuable-learning and improvement comments |
-| What should the team consider next? | Recommendation drafts connected to supporting evidence and limitations |
-
-The application supports descriptive evaluation. It does not establish that training caused a change or that participants subsequently called 988.
-
-## Run the application locally
-
-The public website is the easiest way to explore the dashboard. Local setup is available for analysts and contributors working with survey exports.
-
-### Requirements
-
-- **Python 3.11**
-- An extracted project folder in a writable location.
-- Internet access for first-time package installation.
-- A supported survey export.
-
-### Beginner setup
-
-1. Download and extract the repository.
-2. Open the launcher for your operating system.
-3. Choose the synthetic demonstration or your private survey export.
-4. Follow the prompts and keep the launcher window open while browsing.
+The guided workflow offers a synthetic demonstration or analysis of a private survey export.
 
 | Platform | Launcher |
 | :--- | :--- |
@@ -97,100 +114,62 @@ The public website is the easiest way to explore the dashboard. Local setup is a
 | Windows | `Start EveryMind.bat` |
 | Linux | `start-everymind.sh` |
 
-If macOS opens the launcher as text, use **Open With → Terminal**.
+If macOS opens the launcher as text, choose **Open With → Terminal**. The guided analysis workflow can save `reports/report.json` and `reports/private-quality.json`; keep the private diagnostics private. The source workbook is read without modifying it. See the [backend guide](docs/BACKEND_GUIDE.md) for saved-output details.
 
-For an Excel workbook, the default worksheet name is `Survey Data`. Enter a different name when prompted if needed.
+</details>
 
-The source workbook is read in place and left unchanged.
-
-### Local outputs
-
-| File | Purpose |
-| :--- | :--- |
-| `reports/report.json` | Aggregate dashboard report |
-| `reports/private-quality.json` | Private schema, quality, and comment-review diagnostics |
-
-Both are ignored by Git by default. Keep the private audit private.
-
-Successful runs replace the local outputs. After a failed run, check timestamps before using existing files.
-
----
-
-## Technical architecture
+## How it works
 
 ```text
-Supported survey export
-          │
-          ▼
-Header checks and normalization
-          │
-          ▼
-Quality checks and analytics
-          │
-          ▼
-Topic coding and evidence-linked drafts
-          │
-          ▼
-Release policy and report validation
-          │
-     ┌────┴───────────┐
-     ▼                ▼
-Aggregate report   Private diagnostics
-     │
-     ▼
-Interactive dashboard
+Excel / CSV survey export
+          ↓
+Header checks → normalization → response-quality checks
+          ↓
+Paired outcomes + uncertainty + subgroup analysis + topic coding
+          ↓
+Release protection + report validation
+          ↓
+Aggregate report → interactive dashboard
 ```
 
-The implementation separates Python analysis from browser presentation. A loopback-only FastAPI server supports in-memory workbook upload, filter previews, privacy-checked report recomputation, and aggregate exports. Static hosting displays prepared aggregate JSON reports.
+Python performs the analysis; the browser presents the validated results. FastAPI provides survey upload, filter preview, report generation and aggregate export endpoints. Local mode listens on the computer's loopback interface. Render runs the same application in hosted mode with separate temporary browser sessions.
 
-### Main components
+### Report contract and release rules
 
-| Component | Responsibility |
+Dashboard reports use the **`ReportBundle` schema, version `1.0.0`**. Validation checks metric keys, evidence references, input fingerprints, finite numerical values, calculation-base reconciliation, suppressed fields, and permitted public metrics and dimensions.
+
+The report contains aggregate results. Analyst workflows can generate a separate private audit with source-quality and comment-review diagnostics; that audit is not a dashboard report and must not be published as one.
+
+Hosted analysis allows up to four active upload sessions and processes analysis requests sequentially. It has no persistent database or uploaded-file disk. This is a bounded judging prototype; it is not a production multi-tenant service. See [Render hosting and data handling](docs/RENDER.md).
+
+### Code map
+
+| Area | Main files |
 | :--- | :--- |
-| `ingestion.py` | Read exports and audit question headers |
-| `normalization.py` | Normalize scores, categories, dates, and response values |
-| `quality.py` | Identify usable IDs and quality flags |
-| `metrics.py` | Calculate paired skill results and uncertainty |
-| `subgroups.py` | Analyze participant groups |
-| `survey_versions.py` | Examine calling coverage and survey-version/date patterns |
-| `delivery.py` | Analyze presenter ratings and recommendation measures |
-| `themes.py` | Apply the comment-topic codebook |
-| `release.py` | Restrict the public surface and protect sensitive results |
-| `reporting.py` | Assemble the complete report |
-| `dashboard/` | Display validated results |
+| Reading and checking exports | `ingestion.py`, `normalization.py`, `quality.py` |
+| Outcomes and community analysis | `metrics.py`, `subgroups.py`, `survey_versions.py`, `delivery.py` |
+| Comment topics and report assembly | `themes.py`, `reporting.py` |
+| Release protection and validation | `release.py`, `schemas.py` |
+| Uploads, filters and hosted sessions | `server.py`, `filter_service.py`, `hosted.py` |
+| Presentation | `dashboard/` |
 
-### Validation contract
+Python modules live under `src/everymind_insight/`.
 
-The existing dashboard report contract is `ReportBundle`, schema version `1.0.0`.
+## Status and limitations
 
-Validation checks include:
+EveryMind Insight is a working analytical prototype with hosted survey uploads, a static report viewer and local processing options.
 
-- Duplicate metric keys.
-- References to absent metrics.
-- Inconsistent input fingerprints.
-- Nonfinite numerical values.
-- Calculation-base reconciliation.
-- Numeric fields incorrectly retained in suppressed entries.
-- Public-release metric and dimension rules.
+- **Self-reported change is not a causal effect.** Both ratings were collected after training; recall bias, response shift, respondent selection and the lack of a control group limit interpretation.
+- **Community comparisons are descriptive and unadjusted.** Participant composition varies, and role groups can overlap.
+- **Calling intent is not actual calling behavior.** Blank responses do not distinguish a question that was not asked from one that was skipped.
+- **Comment topics need human review.** Deterministic English keyword rules can miss negation, ambiguity and other languages. Topic shares can overlap; they are not sentiment or coding-accuracy scores.
+- **Privacy protections have limits.** Suppression does not provide differential privacy or guarantee protection across linked releases and outside information. Review reports before external sharing.
 
-Structural validation does not certify source truth or constitute approval to publish.
+## For contributors
 
----
+The latest hosting revision passed **116 Python tests**, including tests with the private reference workbook supplied locally. Live checks also covered synthetic Excel/CSV uploads, report validation, visitor isolation and clearing. These results describe the tested revision, not every future change.
 
-## Tests and reproducibility
-
-The backend-fixes implementation recorded:
-
-| Check | Result |
-| :--- | :--- |
-| Python tests with the supplied reference workbook | **70 passed** |
-| Frontend data-contract tests | **16 passed** |
-| Browser validation | Real/synthetic switching, cohort controls, invalid files, and downloads |
-| Clean macOS setup | Launcher reached the mode menu successfully |
-
-These results describe that tested implementation. New features require additional testing.
-
-For contributors:
+From the project folder, create an environment and run the checks:
 
 ```sh
 python3.11 -m venv .venv
@@ -199,62 +178,39 @@ python3.11 -m venv .venv
 node --test tests/dashboard.test.cjs
 ```
 
-To include the original private reference workbook:
+Node.js is required only for the frontend test command. On Windows, use `py -3.11` to create the environment and `.\.venv\Scripts\python.exe` afterward.
+
+To include an authorized reference workbook in local tests:
 
 ```sh
-.venv/bin/python -m pytest -q tests \
-  --survey-workbook data/survey.xlsx
+.venv/bin/python -m pytest -q tests --survey-workbook /path/to/survey.xlsx
 ```
 
-On Windows, use `py -3.11` for environment creation and `.\.venv\Scripts\python.exe` afterward.
+Reference-workbook tests are skipped when a workbook is not supplied. Keep workbooks, private audits and credentials out of Git. Preserve the source revision, input/settings fingerprints and environment when preparing a reviewed release.
 
-Reference-workbook tests are skipped when that file is not supplied.
-
-Metrics record input/settings fingerprints and analytical methods. Report metadata records software, Python, library, and codebook versions. Preserve the source revision and environment for any reviewed release.
-
----
+The hosted service currently deploys from **`render-hosting`**, with automatic deployment disabled. Updating master alone does not update Render; its hosting branch must be updated and a deployment explicitly triggered. GitHub Pages is a separate deployment. See the [hosting guide](docs/RENDER.md).
 
 ## AI use
 
-Claude supported planning, prompt development, design suggestions, and discussions about team responsibilities.
+Claude helped develop prompts for Codex, suggest design improvements, and discuss project roles. Codex supported implementation, debugging, testing and documentation.
 
-Codex supported implementation, debugging, testing, and documentation.
-
-The current application does not make live language-model requests to calculate survey statistics or classify comments. Numerical results come from Python analysis functions; comment topics come from the deterministic codebook.
-
-See the [AI process record](docs/AI_PROCESS.md) for representative requests, limitations, corrections, and validation practices.
-
----
+The application makes no live language-model requests for survey statistics or comment classification. Python functions calculate the numerical results; a deterministic codebook assigns comment topics. See the [AI process record](docs/AI_PROCESS.md) for examples, corrections and validation practices.
 
 ## Troubleshooting
 
-| Issue | What to check |
+| Issue | What to do |
 | :--- | :--- |
-| The displayed results are illustrative | Check the synthetic/survey source label |
-| A file is rejected | Confirm that its format is supported by the deployed version |
-| Python setup fails | Confirm Python 3.11, internet access, and folder permissions |
-| The launcher opens as text | Use **Open With → Terminal** on macOS |
-| The file picker is unavailable | Paste the full file path when prompted |
-| Required questions are missing | Check worksheet name and approved question wording |
-| A value is unavailable | Inspect data coverage and methods; do not assume zero |
-| A value is withheld | A privacy rule applies; do not lower thresholds merely to display it |
-| Results appear outdated | Check the source label and generation timestamp |
+| The hosted page takes time to open | Allow the free service to wake, then refresh if needed |
+| The service is at capacity | Wait for an active session to clear or expire, or run locally |
+| A survey will not load | Check the 5 MB hosted limit, worksheet name, supported export headers and response IDs; at least 10 usable responses are required |
+| Excel/CSV asks for a local server | Use the Render application link above, or start the local launcher; GitHub Pages handles aggregate JSON only |
+| The report is illustrative | Check the synthetic/survey label and choose your authorized survey |
+| A result is withheld | Inspect the privacy explanation; do not lower thresholds just to display it |
+| Local setup fails | Check Python 3.11, internet access and write permission for the project folder |
+| An upload disappears | Temporary sessions expire and service restarts clear them; upload again if authorized |
 
----
+## Further reading
 
-## Status and limitations
-
-EveryMind Insight is a working analytical prototype with a public dashboard and tested survey-processing functionality.
-
-Results remain subject to retrospective reporting, respondent selection, question coverage, ordinal-scale assumptions, and differences in participant composition. Public community comparisons are descriptive and unadjusted.
-
-### Further documentation
-
-- [Local data options, filtering and exports](docs/DATA_OPTIONS.md)
-- [Backend methods and analyst workflow](docs/BACKEND_GUIDE.md)
-- [GitHub Pages and judge workflow](docs/PAGES.md)
-- [Validation record](docs/VALIDATION.md)
-- [AI-assisted development record](docs/AI_PROCESS.md)
-- [Submission checklist](docs/SUBMISSION_CHECKLIST.md)
+[Data options and exports](docs/DATA_OPTIONS.md) · [Backend methods](docs/BACKEND_GUIDE.md) · [Render hosting](docs/RENDER.md) · [GitHub Pages](docs/PAGES.md) · [Validation record](docs/VALIDATION.md) · [Submission checklist](docs/SUBMISSION_CHECKLIST.md)
 
 Asset attribution and license information are retained in [`dashboard/assets/`](dashboard/assets/).
