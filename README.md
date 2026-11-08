@@ -1,5 +1,3 @@
-# Start here
-
 <div align="center">
 
 ### [Open EveryMind Insight →](https://tvworks22.github.io/everymind-insight/)
