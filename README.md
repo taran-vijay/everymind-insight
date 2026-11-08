@@ -33,7 +33,6 @@ Analysis runs on this computer. The command does not publish a website or upload
 ---
 
 
-### [Open EveryMind Insight →](https://tvworks22.github.io/everymind-insight/)
 
 **Explore training outcomes, participant feedback, and opportunities for improvement.**
 
