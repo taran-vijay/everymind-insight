@@ -43,12 +43,16 @@ def create_app(input_path=None, *, root=ROOT, hosted=None):
             return JSONResponse({'detail':'Cross-site access is disabled.'},status_code=403)
         if hosted and request.url.path.startswith('/api/'):
             async with processing:
-                session, cookie = sessions.acquire(request.cookies.get(COOKIE))
+                session, cookie = sessions.acquire(request.cookies.get(COOKIE), create=request.method == 'POST' and request.url.path == '/api/source')
                 if session is None:
                     return JSONResponse({'detail':'This free demo is busy. Please try again later; no existing visitor data was replaced.'}, status_code=429)
                 request.state.survey_session = session
                 response = await call_next(request)
-                response.set_cookie(COOKIE, cookie, max_age=TTL, secure=True, httponly=True, samesite='strict', path='/')
+                if cookie and session.service is not None:
+                    response.set_cookie(COOKIE, cookie, max_age=TTL, secure=True, httponly=True, samesite='strict', path='/')
+                elif cookie:
+                    sessions.discard(cookie)
+                    response.delete_cookie(COOKIE, secure=True, httponly=True, samesite='strict', path='/')
         else:
             response = await call_next(request)
         response.headers['Cache-Control'] = 'no-store'

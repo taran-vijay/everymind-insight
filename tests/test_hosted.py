@@ -20,6 +20,7 @@ def test_browser_uploads_are_isolated_and_clearable(tmp_path, monkeypatch):
         assert one.get('/api/fields', headers={'Host':'evil.example'}).status_code == 400
         assert one.delete('/api/source').json()['cleared']
         assert not one.get('/api/fields').json()['available']
+        assert not one.cookies
 
 
 def test_session_capacity_signatures_and_expiry(monkeypatch):
@@ -35,6 +36,15 @@ def test_session_capacity_signatures_and_expiry(monkeypatch):
     monkeypatch.setattr(hosted.time, 'monotonic', lambda: future)
     new, _ = store.acquire(token)
     assert new is not session and new.service is None
+
+
+def test_page_visitors_do_not_consume_upload_capacity(monkeypatch):
+    monkeypatch.setenv('RENDER_EXTERNAL_HOSTNAME', 'demo.onrender.com')
+    app = create_app(hosted=True)
+    for _ in range(8):
+        with TestClient(app, base_url='https://demo.onrender.com') as client:
+            assert client.get('/api/fields').status_code == 200
+            assert not client.cookies
 
 
 def test_hosted_mode_requires_explicit_hostname(monkeypatch):

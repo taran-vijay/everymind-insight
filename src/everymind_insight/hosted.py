@@ -24,12 +24,14 @@ class Sessions:
     def signature(self, identifier):
         return hmac.new(self.secret, identifier.encode(), hashlib.sha256).hexdigest()
 
-    def acquire(self, cookie):
+    def acquire(self, cookie, *, create=True):
         now = time.monotonic()
         self.items = {key: value for key, value in self.items.items() if now - value.touched < TTL}
         identifier, separator, signature = (cookie or '').partition('.')
         valid = separator and hmac.compare_digest(signature, self.signature(identifier))
         if not valid or identifier not in self.items:
+            if not create:
+                return Session(now), None
             if len(self.items) >= MAX_SESSIONS:
                 return None, None
             identifier = secrets.token_urlsafe(32)
@@ -37,3 +39,7 @@ class Sessions:
         session = self.items[identifier]
         session.touched = now
         return session, identifier + '.' + self.signature(identifier)
+
+    def discard(self, token):
+        if token:
+            self.items.pop(token.partition('.')[0], None)
