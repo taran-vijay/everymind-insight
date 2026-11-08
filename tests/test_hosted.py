@@ -11,7 +11,11 @@ def test_browser_uploads_are_isolated_and_clearable(tmp_path, monkeypatch):
     app = create_app(hosted=True)
     with TestClient(app, base_url='https://demo.onrender.com') as one, TestClient(app, base_url='https://demo.onrender.com') as two:
         assert one.get('/health').status_code == 200
-        assert 'processed on this server' in one.get('/').text
+        page = one.get('/').text
+        assert 'processed on this server' in page
+        assert 'data-hosted="true"' in page
+        assert 'Excel/CSV uploads are processed temporarily on this server.' in page
+        assert 'Report files stay in your browser.' not in page
         assert one.post('/api/source?filename=survey.csv', content=export(tmp_path/'survey.csv').read_bytes()).status_code == 200
         assert one.get('/api/fields').json()['available']
         assert not two.get('/api/fields').json()['available']

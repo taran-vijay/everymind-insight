@@ -263,4 +263,8 @@ Asset attribution and license information are retained in [`dashboard/assets/`](
 
 ## Hosted Excel/CSV analysis on Render
 
+**[Open the hosted application →](https://everymind-insight-judges.onrender.com/)**
+
+Judges: choose **Open report → Survey or report file**, select your authorized Excel or CSV survey, choose **Use this file**, then **Open full report**. No installation or terminal commands are required. Excel files default to the **Survey Data** worksheet; change that name if your workbook uses another sheet. Uploads are limited to **5 MB** and are processed temporarily on Render for your browser session. Use **Clear my uploaded survey** when finished.
+
 A separate hosted mode supports temporary, isolated browser upload sessions. It preserves local-only mode and the GitHub Pages viewer. See [Render setup and data-handling limits](docs/RENDER.md). Render hosting uses the free plan; an idle service may take time to restart.
