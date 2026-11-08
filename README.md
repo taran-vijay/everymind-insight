@@ -259,3 +259,8 @@ Results remain subject to retrospective reporting, respondent selection, questio
 - [Submission checklist](docs/SUBMISSION_CHECKLIST.md)
 
 Asset attribution and license information are retained in [`dashboard/assets/`](dashboard/assets/).
+
+
+## Hosted Excel/CSV analysis on Render
+
+A separate hosted mode supports temporary, isolated browser upload sessions. It preserves local-only mode and the GitHub Pages viewer. See [Render setup and data-handling limits](docs/RENDER.md). Render hosting uses the free plan; an idle service may take time to restart.

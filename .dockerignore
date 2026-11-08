@@ -1,0 +1,15 @@
+.git
+.venv
+__pycache__
+.pytest_cache
+.hypothesis
+data
+reports
+dist
+tests
+*.xlsx
+*.xls
+*.csv
+*.parquet
+.env
+.env.*

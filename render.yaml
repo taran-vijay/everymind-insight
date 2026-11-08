@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: everymind-insight
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: render-hosting
+    autoDeployTrigger: off
+    healthCheckPath: /health
+    envVars:
+      - key: EVERYMIND_HOSTED
+        value: "1"
